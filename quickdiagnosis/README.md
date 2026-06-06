@@ -1,0 +1,1 @@
+simple random forest classifier to demonstrate quick diagnostics from speech using ADReSSo Sample files. Access to data takes multiple days and can achieve f1 up to 0.86 as seen https://github.com/NTHU-ML-2023-team19/ADReSSo.
