@@ -1,0 +1,6 @@
+[
+  {"date": "2026-06-07", "title": "Weekly farmers market", "location": "Marktplatz", "time": "08:00-13:00", "description": "Fresh produce, bread, flowers."},
+  {"date": "2026-06-13", "title": "City brass band concert", "location": "Stadtpark Pavilion", "time": "16:00", "description": "Free, seating provided."},
+  {"date": "2026-06-14", "title": "City marathon", "location": "City center", "time": "07:00-14:00", "description": "Major streets closed. Public transport reroutes."},
+  {"date": "2026-06-21", "title": "Open day at the senior centre", "location": "Seniorenzentrum Lindenhof", "time": "10:00-15:00", "description": "Coffee, music, conversation."}
+]
