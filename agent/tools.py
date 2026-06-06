@@ -276,3 +276,11 @@ def get_pharmacy_hours(district: str) -> dict:
         },
         "source": "STUB — wire pharmacy directory",
     }
+
+
+# ──────────────────────────────────────────────────────────────────────
+# LIVE TOOLS — registered via @tool in the `tools/` package.
+# Import for side effects so REGISTRY is populated at boot.
+# ──────────────────────────────────────────────────────────────────────
+
+import tools  # noqa: E402, F401
