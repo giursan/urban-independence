@@ -1,4 +1,6 @@
 import os
+import threading
+from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
@@ -6,12 +8,39 @@ from pydantic import BaseModel
 
 from agent import Orchestrator, Store
 from agent.config import ElderProfile
+from telegram_bot import TelegramBot
 
 load_dotenv()
 
-app = FastAPI(title="Urban Independence — HK Elder Decision Coach")
 store = Store(path=os.environ.get("SESSIONS_DB_PATH", "data/sessions.db"))
 orchestrator = Orchestrator(store=store)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Start the Telegram bot in a background thread if a token is configured."""
+    bot: TelegramBot | None = None
+    thread: threading.Thread | None = None
+    token = os.environ.get("TELEGRAM_BOT_TOKEN")
+    if token:
+        bot = TelegramBot(token=token, orch=orchestrator, store=store)
+        thread = threading.Thread(target=bot.run, name="telegram-bot", daemon=True)
+        thread.start()
+    else:
+        print("[telegram] TELEGRAM_BOT_TOKEN not set — bot disabled.")
+    try:
+        yield
+    finally:
+        if bot:
+            bot.stop()
+        if thread:
+            thread.join(timeout=30)
+
+
+app = FastAPI(
+    title="Urban Independence — HK Elder Decision Coach",
+    lifespan=lifespan,
+)
 
 
 class StartReq(BaseModel):

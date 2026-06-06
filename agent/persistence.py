@@ -34,6 +34,20 @@ CREATE TABLE IF NOT EXISTS turns (
 
 CREATE INDEX IF NOT EXISTS idx_turns_session ON turns(session_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_elder ON sessions(elder_id, started_at);
+
+CREATE TABLE IF NOT EXISTS telegram_accounts (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    chat_id     INTEGER UNIQUE,
+    role        TEXT NOT NULL CHECK(role IN ('elder', 'caregiver')),
+    elder_id    TEXT NOT NULL,
+    username    TEXT,
+    first_name  TEXT,
+    phone       TEXT,
+    linked_at   TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_tg_elder_role ON telegram_accounts(elder_id, role);
+CREATE INDEX IF NOT EXISTS idx_tg_phone ON telegram_accounts(phone);
 """
 
 
@@ -46,7 +60,21 @@ class Store:
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self._conn() as c:
+            self._migrate_telegram_accounts(c)
             c.executescript(SCHEMA)
+
+    @staticmethod
+    def _migrate_telegram_accounts(conn: sqlite3.Connection) -> None:
+        """Old schema had chat_id as PK NOT NULL; new one needs it nullable + a phone
+        column. If the legacy shape exists, drop and let CREATE rebuild it."""
+        row = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='telegram_accounts'"
+        ).fetchone()
+        if not row:
+            return
+        cols = {r["name"]: r for r in conn.execute("PRAGMA table_info(telegram_accounts)").fetchall()}
+        if "id" not in cols or "phone" not in cols:
+            conn.execute("DROP TABLE telegram_accounts")
 
     @contextmanager
     def _conn(self):
@@ -126,6 +154,107 @@ class Store:
                 (session_id,),
             ).fetchall()
             return [dict(r) for r in rows]
+
+    # ── telegram_accounts ──────────────────────────────────────────────
+
+    def link_telegram(
+        self,
+        chat_id: int,
+        role: str,
+        elder_id: str,
+        username: str | None = None,
+        first_name: str | None = None,
+        phone: str | None = None,
+    ) -> None:
+        """Link or update a real Telegram chat. If a pre-registered family member exists
+        for the same (elder_id, phone), upgrade that row with the chat_id."""
+        if role not in {"elder", "caregiver"}:
+            raise ValueError(f"role must be 'elder' or 'caregiver', got {role!r}")
+        with self._conn() as c:
+            existing = None
+            if phone:
+                existing = c.execute(
+                    "SELECT id FROM telegram_accounts WHERE elder_id = ? AND phone = ? AND chat_id IS NULL",
+                    (elder_id, phone),
+                ).fetchone()
+            if existing:
+                c.execute(
+                    "UPDATE telegram_accounts SET chat_id=?, role=?, username=?, "
+                    "first_name=?, linked_at=? WHERE id=?",
+                    (chat_id, role, username, first_name, _now(), existing["id"]),
+                )
+            else:
+                c.execute(
+                    "INSERT INTO telegram_accounts (chat_id, role, elder_id, username, first_name, phone, linked_at) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?) "
+                    "ON CONFLICT(chat_id) DO UPDATE SET "
+                    "  role=excluded.role, elder_id=excluded.elder_id, "
+                    "  username=excluded.username, first_name=excluded.first_name, "
+                    "  phone=COALESCE(excluded.phone, telegram_accounts.phone), "
+                    "  linked_at=excluded.linked_at",
+                    (chat_id, role, elder_id, username, first_name, phone, _now()),
+                )
+
+    def register_family_member(
+        self,
+        elder_id: str,
+        phone: str,
+        first_name: str | None = None,
+        username: str | None = None,
+        role: str = "caregiver",
+    ) -> int:
+        """Pre-register a family member by phone before they've connected via Telegram.
+        Returns the row id. Idempotent on (elder_id, phone)."""
+        if role not in {"elder", "caregiver"}:
+            raise ValueError(f"role must be 'elder' or 'caregiver', got {role!r}")
+        with self._conn() as c:
+            existing = c.execute(
+                "SELECT id FROM telegram_accounts WHERE elder_id = ? AND phone = ?",
+                (elder_id, phone),
+            ).fetchone()
+            if existing:
+                c.execute(
+                    "UPDATE telegram_accounts SET role=?, first_name=?, username=?, linked_at=? WHERE id=?",
+                    (role, first_name, username, _now(), existing["id"]),
+                )
+                return int(existing["id"])
+            cur = c.execute(
+                "INSERT INTO telegram_accounts (chat_id, role, elder_id, username, first_name, phone, linked_at) "
+                "VALUES (NULL, ?, ?, ?, ?, ?, ?)",
+                (role, elder_id, username, first_name, phone, _now()),
+            )
+            return int(cur.lastrowid)
+
+    def unlink_telegram(self, chat_id: int) -> None:
+        with self._conn() as c:
+            c.execute("DELETE FROM telegram_accounts WHERE chat_id = ?", (chat_id,))
+
+    def get_telegram_account(self, chat_id: int) -> dict | None:
+        with self._conn() as c:
+            row = c.execute(
+                "SELECT * FROM telegram_accounts WHERE chat_id = ?", (chat_id,)
+            ).fetchone()
+            return dict(row) if row else None
+
+    def list_family_members(self, elder_id: str) -> list[dict]:
+        with self._conn() as c:
+            rows = c.execute(
+                "SELECT * FROM telegram_accounts WHERE elder_id = ? ORDER BY role, linked_at",
+                (elder_id,),
+            ).fetchall()
+            return [dict(r) for r in rows]
+
+    def get_caregiver_chat_id(self, elder_id: str) -> int | None:
+        """Return the chat_id of the most recently linked caregiver for an elder.
+        Only returns rows where chat_id is set (i.e. they've actually connected)."""
+        with self._conn() as c:
+            row = c.execute(
+                "SELECT chat_id FROM telegram_accounts "
+                "WHERE elder_id = ? AND role = 'caregiver' AND chat_id IS NOT NULL "
+                "ORDER BY linked_at DESC LIMIT 1",
+                (elder_id,),
+            ).fetchone()
+            return int(row["chat_id"]) if row else None
 
     def list_sessions(self, elder_id: str | None = None, limit: int = 50) -> list[dict]:
         with self._conn() as c:
