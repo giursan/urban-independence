@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
 from .routes import chat, conversations, diagnostics, reports
+from . import hk_tools  # noqa: F401 — import-time registers live HK tools on companion_agent
 
 app = FastAPI(title="Agentic Companion API")
 
