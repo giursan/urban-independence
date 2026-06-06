@@ -14,6 +14,12 @@ Run:
 
 Type a message and hit enter. Type 'quit' or Ctrl-D to exit.
 The tool calls each turn are printed for visibility.
+
+Commands inside the REPL:
+    /mode companion|reflect|reminiscence|engage   switch persona overlay
+    /mode                                          show current mode
+    /reset                                         clear conversation history
+    /quit                                          exit
 """
 
 from __future__ import annotations
@@ -52,13 +58,20 @@ def _print_tool_calls(messages) -> None:
                 print(f"    ↩ {p.tool_name} → {preview}")
 
 
+VALID_MODES = {"companion", "reflect", "reminiscence", "engage"}
+
+
 async def main() -> int:
     model = os.environ.get("COMPANION_MODEL", "openai:gpt-4o")
-    print(f"Companion ready — model: {model}")
+    mode = os.environ.get("COMPANION_MODE", "companion")
+    if mode not in VALID_MODES:
+        print(f"Unknown COMPANION_MODE={mode!r}; falling back to 'companion'")
+        mode = "companion"
+    print(f"Companion ready — model: {model} — mode: {mode}")
     print("(fake DB + memory; HK tools live)")
-    print("Type 'quit' to exit.\n")
+    print("Commands: /mode <name>  /reset  /quit\n")
 
-    deps, _ = make_deps(mode="companion")
+    deps, _ = make_deps(mode=mode)
     history: list = []
 
     while True:
@@ -69,8 +82,25 @@ async def main() -> int:
             break
         if not user_text:
             continue
-        if user_text.lower() in {"quit", "exit", ":q"}:
+        if user_text.lower() in {"quit", "exit", ":q", "/quit"}:
             break
+        if user_text.lower() == "/reset":
+            history = []
+            print("  [history cleared]\n")
+            continue
+        if user_text.lower().startswith("/mode"):
+            parts = user_text.split(maxsplit=1)
+            if len(parts) == 1:
+                print(f"  [mode = {deps.mode}]\n")
+            else:
+                new_mode = parts[1].strip().lower()
+                if new_mode not in VALID_MODES:
+                    print(f"  [unknown mode {new_mode!r}; valid: {', '.join(sorted(VALID_MODES))}]\n")
+                else:
+                    deps.mode = new_mode
+                    history = []  # clear history so the new overlay isn't shadowed by old turns
+                    print(f"  [mode → {new_mode}, history cleared]\n")
+            continue
 
         deps.last_user_text = user_text
 
