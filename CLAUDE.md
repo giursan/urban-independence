@@ -21,10 +21,11 @@ This is text-in / text-out for now. Voice (Twilio / streaming TTS) is a later la
 - ✅ Terminal CLI demo (`demo_cli.py`)
 
 **Real API integrations done:**
-- ✅ `get_air_quality` — wired to HK EPD AQHI RSS feed (see `agent/sources/aqhi.py`). 5-min in-memory cache. Pattern to follow for the other 7 tools.
+- ✅ `get_air_quality` — HK EPD AQHI RSS feed (`agent/sources/aqhi.py`). 5-min cache.
+- ✅ `get_traffic_advisory` — HK Transport Department Special Traffic News v2 XML (`agent/sources/traffic.py`). 2-min cache. Returns incidents matched by district/street/landmark; falls back to feed-wide top-15 if no match.
 
 **Not built yet** (do NOT add unless asked):
-- Remaining 7 tools still stubbed (returns marked `"source": "STUB — …"`)
+- Remaining 6 tools still stubbed (returns marked `"source": "STUB — …"`)
 - Streaming for the dialogue phase (orchestrator uses non-streaming `messages.create`)
 - Voice integration
 - Multi-language output (English-only system prompts)
@@ -82,6 +83,7 @@ agent/
   tools.py          @tool decorator, REGISTRY, 8 tools (1 real, 7 stubbed)
   sources/          One file per real HK API (network + parsing). Imported by tools.py.
     aqhi.py         HK EPD Air Quality Health Index (RSS, hourly)
+    traffic.py      HK TD Special Traffic News v2 (XML, real-time)
   persistence.py    Store class — SQLite (sessions, turns)
   orchestrator.py   THE main loop. _run_tool_loop is the heart.
 app.py              FastAPI surface

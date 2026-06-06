@@ -29,7 +29,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
-from .sources import aqhi
+from .sources import aqhi, traffic
 
 
 @dataclass
@@ -205,25 +205,30 @@ def get_bus_status(route: str) -> dict:
 
 @tool(
     name="get_traffic_advisory",
-    description="Get current traffic incidents, road closures, and event-related disruptions in Hong Kong.",
+    description=(
+        "Get current Hong Kong road incidents and special traffic arrangements: closures, construction, "
+        "watermain works, accidents, lane restrictions, diversions, and event-related disruptions. "
+        "Each incident includes the street/location, district, type, status (NEW/UPDATED/CLEARED), "
+        "announcement time, and a full description. "
+        "Source: HK Transport Department — Special Traffic News v2 (live XML feed, real-time). "
+        "If the district has no incidents tagged, the 15 most recent feed-wide are returned so the "
+        "model can still judge regional relevance."
+    ),
     parameters={
-        "district": {"type": "string", "description": "District to check."}
+        "district": {
+            "type": "string",
+            "description": (
+                "Hong Kong district, street, or landmark name to filter by "
+                "(e.g. 'Sham Shui Po', 'Wong Tai Sin', 'Nathan Road', 'Causeway Bay'). "
+                "Loose substring match against district, location, and landmark fields. "
+                "Omit to get feed-wide situational awareness."
+            ),
+        }
     },
-    required=["district"],
+    required=[],
 )
-def get_traffic_advisory(district: str) -> dict:
-    return {
-        "district": district,
-        "incidents": [
-            {
-                "location": "Nathan Road southbound",
-                "type": "accident",
-                "severity": "moderate",
-                "expected_clear_min": 30,
-            }
-        ],
-        "source": "STUB — wire Transport Department feed",
-    }
+def get_traffic_advisory(district: str | None = None) -> dict:
+    return traffic.fetch_traffic_advisories(district)
 
 
 @tool(
