@@ -1,111 +1,91 @@
 import os
 
-from anthropic import Anthropic
 from dotenv import load_dotenv
-from fastapi import FastAPI, Form
-from fastapi.responses import Response
-from twilio.twiml.voice_response import Gather, VoiceResponse
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 
-from prompts import system_prompt
-from state import history, reset
-from tools import TOOL_DEFS, run_tool
+from agent import Orchestrator, Store
+from agent.config import ElderProfile
 
 load_dotenv()
 
-MODEL = "claude-haiku-4-5-20251001"
-MAX_TOOL_ITERATIONS = 5
-GATHER_TIMEOUT = 4
-SPEECH_LANGUAGE = "en-US"
-
-app = FastAPI()
-claude = Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+app = FastAPI(title="Urban Independence — HK Elder Decision Coach")
+store = Store(path=os.environ.get("SESSIONS_DB_PATH", "data/sessions.db"))
+orchestrator = Orchestrator(store=store)
 
 
-def twiml(resp: VoiceResponse) -> Response:
-    return Response(content=str(resp), media_type="application/xml")
+class StartReq(BaseModel):
+    elder_id: str
+    name: str = "Friend"
+    age: int | None = None
+    home_district: str = "Sham Shui Po"
+    mobility: str = "walks independently with a cane"
+    health_notes: list[str] = []
+    languages: list[str] = ["English", "Cantonese"]
 
 
-def gather(say_text: str, action: str = "/turn") -> VoiceResponse:
-    resp = VoiceResponse()
-    g = Gather(
-        input="speech",
-        action=action,
-        method="POST",
-        speech_timeout="auto",
-        timeout=GATHER_TIMEOUT,
-        language=SPEECH_LANGUAGE,
+class StartResp(BaseModel):
+    session_id: str
+    scenario_text: str
+    scenario: dict
+    context: dict
+
+
+class TurnReq(BaseModel):
+    session_id: str
+    message: str
+
+
+class TurnResp(BaseModel):
+    reply: str
+
+
+@app.post("/sessions", response_model=StartResp)
+def start_session(req: StartReq) -> StartResp:
+    profile = ElderProfile(**req.model_dump())
+    session = orchestrator.start_session(profile)
+    return StartResp(
+        session_id=session.id,
+        scenario_text=_format_scenario(session.scenario),
+        scenario=session.scenario.model_dump(),
+        context=session.context,
     )
-    g.say(say_text)
-    resp.append(g)
-    resp.redirect("/timeout", method="POST")
-    return resp
 
 
-def assistant_turn(call_sid: str, user_text: str) -> str:
-    msgs = history(call_sid)
-    msgs.append({"role": "user", "content": user_text})
-
-    for _ in range(MAX_TOOL_ITERATIONS):
-        reply = claude.messages.create(
-            model=MODEL,
-            max_tokens=512,
-            system=system_prompt(),
-            tools=TOOL_DEFS,
-            messages=msgs,
-        )
-
-        msgs.append({"role": "assistant", "content": reply.content})
-
-        if reply.stop_reason != "tool_use":
-            return "".join(b.text for b in reply.content if b.type == "text").strip()
-
-        tool_results = []
-        for block in reply.content:
-            if block.type != "tool_use":
-                continue
-            try:
-                result = run_tool(block.name, block.input)
-                tool_results.append({
-                    "type": "tool_result",
-                    "tool_use_id": block.id,
-                    "content": str(result),
-                })
-            except Exception as e:
-                tool_results.append({
-                    "type": "tool_result",
-                    "tool_use_id": block.id,
-                    "content": f"error: {e}",
-                    "is_error": True,
-                })
-        msgs.append({"role": "user", "content": tool_results})
-
-    return "I'm sorry, I got a bit confused. Could you say that again?"
+@app.post("/sessions/turn", response_model=TurnResp)
+def turn(req: TurnReq) -> TurnResp:
+    try:
+        reply = orchestrator.turn(req.session_id, req.message)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    return TurnResp(reply=reply)
 
 
-@app.post("/voice")
-async def voice(CallSid: str = Form(...)):
-    reset(CallSid)
-    greeting = assistant_turn(CallSid, "[The caller has just dialled in. Greet them briefly and ask how you can help.]")
-    return twiml(gather(greeting))
+@app.post("/sessions/{session_id}/end")
+def end_session(session_id: str, summary: str | None = None) -> dict:
+    orchestrator.end_session(session_id, summary=summary)
+    return {"ok": True}
 
 
-@app.post("/turn")
-async def turn(CallSid: str = Form(...), SpeechResult: str = Form(default="")):
-    if not SpeechResult.strip():
-        return twiml(gather("I didn't catch that. Could you say it again?"))
-    reply = assistant_turn(CallSid, SpeechResult)
-    return twiml(gather(reply))
+@app.get("/sessions/{session_id}")
+def get_session(session_id: str) -> dict:
+    s = store.get_session(session_id)
+    if not s:
+        raise HTTPException(status_code=404, detail="session not found")
+    s["turns"] = store.get_turns(session_id)
+    return s
 
 
-@app.post("/timeout")
-async def timeout(CallSid: str = Form(...)):
-    resp = VoiceResponse()
-    resp.say("I didn't hear anything. Goodbye, take care.")
-    resp.hangup()
-    reset(CallSid)
-    return twiml(resp)
+@app.get("/elders/{elder_id}/sessions")
+def list_sessions(elder_id: str, limit: int = 50) -> list[dict]:
+    return store.list_sessions(elder_id=elder_id, limit=limit)
 
 
 @app.get("/health")
-async def health():
+def health() -> dict:
     return {"ok": True}
+
+
+def _format_scenario(scenario) -> str:
+    opts = "\n".join(f"  ({o.label}) {o.text}" for o in scenario.options)
+    return f"{scenario.setting}\n\n{scenario.goal}\n\n{opts}"
