@@ -29,6 +29,8 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
+import httpx
+
 
 @dataclass
 class Tool:
@@ -151,27 +153,118 @@ def get_air_quality(district: str) -> dict:
     }
 
 
+# ── MTR Next Train (live) ─────────────────────────────────────────────
+# Official HK Open Data "MTR Next Train" feed (data.gov.hk). Station/line
+# codes are from github.com/sarkrui/MTR-Next-Train's reference tables.
+# Returns upcoming arrivals per direction plus the `isdelay` flag.
+
+_MTR_OFFICIAL = "https://rt.data.gov.hk/v1/transport/mtr/getSchedule.php"
+
+_MTR_LINES = {
+    "AEL": "Airport Express",
+    "TCL": "Tung Chung Line",
+    "TML": "Tuen Ma Line",
+    "TKL": "Tseung Kwan O Line",
+    "EAL": "East Rail Line",
+    "SIL": "South Island Line",
+    "TWL": "Tsuen Wan Line",
+}
+
+_MTR_STATIONS = {
+    "HOK": "Hong Kong", "KOW": "Kowloon", "TSY": "Tsing Yi", "AIR": "Airport",
+    "AWE": "AsiaWorld Expo", "OLY": "Olympic", "NAC": "Nam Cheong", "LAK": "Lai King",
+    "SUN": "Sunny Bay", "TUC": "Tung Chung", "WKS": "Wu Kai Sha", "MOS": "Ma On Shan",
+    "HEO": "Heng On", "TSH": "Tai Shui Hang", "SHM": "Shek Mun", "CIO": "City One",
+    "STW": "Sha Tin Wai", "CKT": "Che Kung Temple", "TAW": "Tai Wai", "HIK": "Hin Keng",
+    "DIH": "Diamond Hill", "KAT": "Kai Tak", "SUW": "Sung Wong Toi", "TKW": "To Kwa Wan",
+    "HOM": "Ho Man Tin", "HUH": "Hung Hom", "ETS": "East Tsim Sha Tsui", "AUS": "Austin",
+    "MEF": "Mei Foo", "TWW": "Tsuen Wan West", "KSR": "Kam Sheung Road", "YUL": "Yuen Long",
+    "LOP": "Long Ping", "TIS": "Tin Shui Wai", "SIH": "Siu Hong", "TUM": "Tuen Mun",
+    "NOP": "North Point", "QUB": "Quarry Bay", "YAT": "Yau Tong", "TIK": "Tiu Keng Leng",
+    "TKO": "Tseung Kwan O", "LHP": "LOHAS Park", "HAH": "Hang Hau", "POA": "Po Lam",
+    "ADM": "Admiralty", "EXC": "Exhibition Centre", "MKK": "Mong Kok East",
+    "KOT": "Kowloon Tong", "SHT": "Sha Tin", "FOT": "Fo Tan", "RAC": "Racecourse",
+    "UNI": "University", "TAP": "Tai Po Market", "TWO": "Tai Wo", "FAN": "Fanling",
+    "SHS": "Sheung Shui", "LOW": "Lo Wu", "LMC": "Lok Ma Chau", "OCP": "Ocean Park",
+    "WCH": "Wong Chuk Hang", "LET": "Lei Tung", "SOH": "South Horizons", "CEN": "Central",
+    "TST": "Tsim Sha Tsui", "JOR": "Jordan", "YMT": "Yau Ma Tei", "MOK": "Mong Kok",
+    "PRE": "Prince Edward", "SSP": "Sham Shui Po", "CSW": "Cheung Sha Wan",
+    "LCK": "Lai Chi Kok", "KWF": "Kwai Fong", "KWH": "Kwai Hing", "TWH": "Tai Wo Hau",
+    "TSW": "Tsuen Wan",
+}
+
+# name → code (case-insensitive), tolerant of the "Price Edward" typo in the source tables.
+_MTR_LINE_BY_NAME = {v.lower(): k for k, v in _MTR_LINES.items()}
+_MTR_STATION_BY_NAME = {v.lower(): k for k, v in _MTR_STATIONS.items()}
+_MTR_STATION_BY_NAME["price edward"] = "PRE"
+
+
+def _resolve_mtr_code(value: str, codes: dict[str, str], by_name: dict[str, str], kind: str) -> str:
+    """Accept either an official code (e.g. 'TWL') or a human name (e.g. 'Tsuen Wan Line')."""
+    v = value.strip()
+    if v.upper() in codes:
+        return v.upper()
+    if v.lower() in by_name:
+        return by_name[v.lower()]
+    raise ValueError(f"unknown MTR {kind}: {value!r}")
+
+
 @tool(
     name="get_mtr_status",
-    description="Get current operational status and delays of Hong Kong MTR lines.",
+    description=(
+        "Get live next-train arrivals for a Hong Kong MTR station: upcoming trains in both "
+        "directions (destination, scheduled time, minutes away) and whether the line is delayed. "
+        "Requires both an MTR line and a station; you may pass official codes (line 'TWL', "
+        "station 'CEN') or names (line 'Tsuen Wan Line', station 'Central'). "
+        "Source: MTR Next Train API."
+    ),
     parameters={
         "line": {
             "type": "string",
-            "description": "Optional MTR line (e.g. 'Tsuen Wan', 'Island', 'Kwun Tong'). Omit for all lines.",
-        }
+            "description": "MTR line code or name, e.g. 'TWL' / 'Tsuen Wan Line', 'EAL' / 'East Rail Line'.",
+        },
+        "station": {
+            "type": "string",
+            "description": "Station code or name on that line, e.g. 'CEN' / 'Central', 'SSP' / 'Sham Shui Po'.",
+        },
     },
-    required=[],
+    required=["line", "station"],
 )
-def get_mtr_status(line: str | None = None) -> dict:
-    lines = [
-        {"line": "Tsuen Wan", "status": "delayed", "delay_min": 15, "reason": "signalling fault near Mong Kok"},
-        {"line": "Island", "status": "normal", "delay_min": 0},
-        {"line": "Kwun Tong", "status": "normal", "delay_min": 0},
-        {"line": "Tung Chung", "status": "normal", "delay_min": 0},
-    ]
-    if line:
-        lines = [l for l in lines if l["line"].lower() == line.lower()]
-    return {"lines": lines, "source": "STUB — wire MTR Next Train API"}
+def get_mtr_status(line: str, station: str) -> dict:
+    line_code = _resolve_mtr_code(line, _MTR_LINES, _MTR_LINE_BY_NAME, "line")
+    sta_code = _resolve_mtr_code(station, _MTR_STATIONS, _MTR_STATION_BY_NAME, "station")
+
+    r = httpx.get(_MTR_OFFICIAL, params={"line": line_code, "sta": sta_code}, timeout=15)
+    r.raise_for_status()
+    body = r.json()
+    if body.get("status") != 1:
+        raise RuntimeError(f"MTR Next Train feed error: {body.get('message', 'unknown')}")
+    block = body["data"][f"{line_code}-{sta_code}"]
+
+    def norm(rows: list[dict]) -> list[dict]:
+        return [
+            {
+                "dest": _MTR_STATIONS.get(row.get("dest"), row.get("dest")),
+                "time": (row.get("time") or "")[11:16],
+                "mins": int(row["ttnt"]) if str(row.get("ttnt", "")).isdigit() else None,
+                "platform": row.get("plat"),
+            }
+            for row in rows
+        ]
+
+    schedule = {"UP": norm(block.get("UP", [])), "DOWN": norm(block.get("DOWN", []))}
+    all_mins = [t["mins"] for d in schedule.values() for t in d if t["mins"] is not None]
+
+    return {
+        "line": _MTR_LINES[line_code],
+        "line_code": line_code,
+        "station": _MTR_STATIONS[sta_code],
+        "station_code": sta_code,
+        "is_delayed": body.get("isdelay") == "Y",
+        "next_arrival_min": min(all_mins) if all_mins else None,
+        "schedule": schedule,
+        "source": "MTR Next Train API (data.gov.hk)",
+    }
 
 
 @tool(
