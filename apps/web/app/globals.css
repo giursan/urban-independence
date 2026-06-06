@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+:root {
+  --font-scale: 1;
+  --background: #fbf7f0; /* warm cream, easy on the eyes */
+  --foreground: #1f2937; /* slate-800, high contrast on cream */
+  --card: #ffffff;
+  --card-foreground: #1f2937;
+  --primary: #1d4ed8; /* accessible blue (AA on white) */
+  --primary-foreground: #ffffff;
+  --muted: #57534e;
+  --border: #e7e0d6;
+  --accent: #9a3412; /* warm terracotta */
+  --danger: #b91c1c;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-danger: var(--danger);
+  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+/* 18px base, scaled by the user's font-size control. rem units scale with it. */
+html {
+  font-size: calc(112.5% * var(--font-scale));
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+/* Always-visible, high-contrast focus for keyboard users. */
+:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
