@@ -20,8 +20,11 @@ This is text-in / text-out for now. Voice (Twilio / streaming TTS) is a later la
 - ✅ FastAPI HTTP surface
 - ✅ Terminal CLI demo (`demo_cli.py`)
 
+**Real API integrations done:**
+- ✅ `get_air_quality` — wired to HK EPD AQHI RSS feed (see `agent/sources/aqhi.py`). 5-min in-memory cache. Pattern to follow for the other 7 tools.
+
 **Not built yet** (do NOT add unless asked):
-- Real HK API calls (stubs return mock JSON marked `"source": "STUB — …"`)
+- Remaining 7 tools still stubbed (returns marked `"source": "STUB — …"`)
 - Streaming for the dialogue phase (orchestrator uses non-streaming `messages.create`)
 - Voice integration
 - Multi-language output (English-only system prompts)
@@ -76,7 +79,9 @@ agent/
   config.py         AgentConfig (model, effort, max_tokens), ElderProfile
   schemas.py        Pydantic: Scenario, ScenarioOption, Critique, Phase enum
   prompts.py        Three phase-aware system prompts
-  tools.py          @tool decorator, REGISTRY, 8 stub tools
+  tools.py          @tool decorator, REGISTRY, 8 tools (1 real, 7 stubbed)
+  sources/          One file per real HK API (network + parsing). Imported by tools.py.
+    aqhi.py         HK EPD Air Quality Health Index (RSS, hourly)
   persistence.py    Store class — SQLite (sessions, turns)
   orchestrator.py   THE main loop. _run_tool_loop is the heart.
 app.py              FastAPI surface
@@ -165,7 +170,10 @@ GET    /health
 
 ## Where to start by task type
 
-- **"Wire up the real HK Observatory API"** → replace the body of `get_weather` in `agent/tools.py`. Keep the keys. Add `httpx` calls inside the function.
+- **"Wire up the real HK Observatory API"** → follow the `aqhi.py` pattern:
+  1. Create `agent/sources/<name>.py` with a `fetch_*` function. Put the HTTP call, parsing, and any in-memory caching there.
+  2. Import the module in `agent/tools.py` and replace the stub body of the matching `@tool` function with a call into it.
+  3. Keep the tool's return-dict keys stable — prompts read them. Always include `"source"` and `"source_url"` for auditability.
 - **"Add Cantonese output"** → edit `agent/prompts.py:system_prompt_dialogue` to add a voice rule, and pass `locale` through `AgentConfig`. The schema is language-agnostic.
 - **"Stream the dialogue reply"** → swap `client.messages.create` for `client.messages.stream` in `_run_tool_loop`, **only for the dialogue phase**. Tool-fetch loop should stay non-streaming.
 - **"Add a new phase (e.g. RECAP)"** → add it to `Phase` enum in `schemas.py`, add the prompt in `prompts.py`, add the transition in `orchestrator.py`.

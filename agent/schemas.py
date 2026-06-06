@@ -29,7 +29,7 @@ class Scenario(BaseModel):
     live_factors: list[str] = Field(
         description="Bullet list of the specific live data points that matter for this decision (e.g. '32°C and 85% humidity', 'Tsuen Wan line 15-min delay'). Each item must reference a real value from the fetched context.",
         min_length=2,
-        max_length=6,
+        max_length=8,
     )
     options: list[ScenarioOption] = Field(min_length=2, max_length=4)
     teaching_focus: str = Field(description="The decision-making skill this scenario is designed to train (e.g. 'weighing comfort vs. cost when fatigued', 'reading transit disruptions').")

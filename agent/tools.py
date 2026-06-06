@@ -29,6 +29,8 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
+from .sources import aqhi
+
 
 @dataclass
 class Tool:
@@ -134,21 +136,27 @@ def get_weather(district: str) -> dict:
 
 @tool(
     name="get_air_quality",
-    description="Get current Hong Kong Air Quality Health Index (AQHI) for a district.",
+    description=(
+        "Get the current Hong Kong Air Quality Health Index (AQHI) for a district or monitoring station, "
+        "with a health advisory tailored for elderly users. "
+        "AQHI bands: 1–3 Low, 4 Moderate, 5–6 High, 7 Very High, 8–10+ Serious. "
+        "Source: HK Environmental Protection Department live RSS feed (updated hourly). "
+        "If the district name does not match an EPD station, all stations are returned so the model can pick the nearest."
+    ),
     parameters={
-        "district": {"type": "string", "description": "Hong Kong district name."}
+        "district": {
+            "type": "string",
+            "description": (
+                "HK district or monitoring station name "
+                "(e.g. 'Sham Shui Po', 'Central', 'Causeway Bay', 'Mong Kok', 'Tsuen Wan', 'Tung Chung'). "
+                "Loose substring match against EPD station names."
+            ),
+        }
     },
     required=["district"],
 )
 def get_air_quality(district: str) -> dict:
-    return {
-        "district": district,
-        "aqhi": 6,
-        "band": "High",
-        "main_pollutant": "PM2.5",
-        "health_advisory": "People with heart or respiratory illnesses should reduce outdoor physical exertion.",
-        "source": "STUB — wire EPD AQHI feed",
-    }
+    return aqhi.fetch_aqhi(district)
 
 
 @tool(
