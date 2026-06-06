@@ -67,9 +67,9 @@ async def main() -> int:
     if mode not in VALID_MODES:
         print(f"Unknown COMPANION_MODE={mode!r}; falling back to 'companion'")
         mode = "companion"
-    print(f"Companion ready — model: {model} — mode: {mode}")
-    print("(fake DB + memory; HK tools live)")
-    print("Commands: /mode <name>  /reset  /quit\n")
+    print(f"Companion ready — model: {model}")
+    print("(fake DB + memory; HK tools live; posture is adaptive — model picks per turn)")
+    print("Commands: /reset  /quit\n")
 
     deps, _ = make_deps(mode=mode)
     history: list = []

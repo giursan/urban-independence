@@ -30,8 +30,8 @@ async def test_companion_saves_memory_via_tool():
     assert any("Mia" in content for content, _ in memory.saved)
 
 
-async def test_dynamic_instructions_include_mode_profile_and_memory():
-    deps, memory = make_deps(mode="reflect", last_user_text="thinking about my late husband")
+async def test_dynamic_instructions_include_adaptive_overlay_profile_and_memory():
+    deps, memory = make_deps(last_user_text="thinking about my late husband")
     memory.canned = [{"content": "Her husband was named Albert"}]
     captured = {}
 
@@ -42,6 +42,9 @@ async def test_dynamic_instructions_include_mode_profile_and_memory():
     await companion_agent.run("hello", deps=deps, model=FunctionModel(model_fn))
 
     instr = captured["instr"]
-    assert "REFLECT" in instr  # mode overlay applied
+    # Adaptive overlay teaches the model to pick posture per message instead of
+    # being locked into a discrete mode; check for its hallmark cues.
+    assert "adapt" in instr.lower()
+    assert "Socratic" in instr  # the decision/uncertainty branch is part of the overlay
     assert "Rose" in instr  # profile name
     assert "Albert" in instr  # injected memory

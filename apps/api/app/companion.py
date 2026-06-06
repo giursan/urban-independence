@@ -11,7 +11,7 @@ import json
 from pydantic_ai import Agent, RunContext
 
 from .deps import CompanionDeps
-from .persona import BASE_PERSONA, MODE_OVERLAYS
+from .persona import ADAPTIVE_OVERLAY, BASE_PERSONA  # MODE_OVERLAYS retired — see persona.py
 
 # Model is supplied per-run (see routes/chat.py) so importing this module never
 # requires an OpenAI key — which keeps tests and `/health` working offline.
@@ -25,7 +25,11 @@ companion_agent = Agent(
 async def contextual_instructions(ctx: RunContext[CompanionDeps]) -> str:
     deps = ctx.deps
     profile = deps.profile
-    lines: list[str] = [MODE_OVERLAYS.get(deps.mode, MODE_OVERLAYS["companion"])]
+    # The model now picks posture (companion / reflect / reminiscence / engage)
+    # turn-by-turn from cues in the user's message. `deps.mode` is kept on the
+    # dataclass for backward compat with routes/chat.py but no longer drives
+    # the prompt.
+    lines: list[str] = [ADAPTIVE_OVERLAY]
     lines.append(f"You are speaking with {profile.address_name}.")
     if profile.interests:
         lines.append(f"Their interests include: {', '.join(profile.interests)}.")
