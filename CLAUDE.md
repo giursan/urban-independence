@@ -10,22 +10,33 @@ This is text-in / text-out for now. Voice (Twilio / streaming TTS) is a later la
 
 ## Current state
 
-**Built and working end-to-end against stubs.**
+**Built and working end-to-end.** 14 tools registered: 10 LIVE, 4 STUB.
 
+| Tool | State | Source module | Notes |
+|---|---|---|---|
+| `get_weather` | LIVE | `sources/weather.py` | HK Observatory `rhrread` |
+| `get_weather_forecast` | LIVE | `sources/weather.py` | HKO `flw` + `fnd` (9-day) |
+| `get_air_quality` | LIVE | `sources/aqhi.py` | EPD AQHI RSS, hourly, 5-min cache |
+| `get_traffic_advisory` | LIVE | `sources/traffic.py` | TD Special Traffic News v2, real-time, 2-min cache |
+| `get_mtr_status` | LIVE | `sources/mtr.py` | MTR Next Train, accepts codes or names |
+| `get_mtr_bus_schedule` | LIVE | `sources/mtr.py` | MTR Bus stop ETAs |
+| `get_hkfp_news` | LIVE | `sources/news.py` | Hong Kong Free Press RSS |
+| `web_search` | LIVE | `sources/web.py` | Firecrawl — needs `FIRECRAWL_API_KEY` |
+| `web_scrape` | LIVE | `sources/web.py` | Firecrawl — needs `FIRECRAWL_API_KEY` |
+| `get_calendar_events` | LIVE | `sources/calendar.py` | Google Calendar — needs `GOOGLE_CALENDAR_API_KEY` |
+| `get_bus_status` | STUB | `tools.py` inline | KMB / Citybus ETA — not wired |
+| `get_typhoon_signal` | STUB | `tools.py` inline | HKO warnings — not wired |
+| `get_local_events` | STUB | `tools.py` inline | LCSD events — not wired |
+| `get_pharmacy_hours` | STUB | `tools.py` inline | Pharmacy directory — not wired |
+
+Other pieces:
 - ✅ Orchestrator with phase state machine
-- ✅ Tool registry (`@tool` decorator)
-- ✅ 8 HK API tools — **all stubbed with fake but realistic returns**. Real API integration is the team's next task.
 - ✅ Structured scenario generation via `messages.parse(output_format=Scenario)`
 - ✅ SQLite persistence (sessions + turns + tool calls + token usage)
 - ✅ FastAPI HTTP surface
 - ✅ Terminal CLI demo (`demo_cli.py`)
 
-**Real API integrations done:**
-- ✅ `get_air_quality` — HK EPD AQHI RSS feed (`agent/sources/aqhi.py`). 5-min cache.
-- ✅ `get_traffic_advisory` — HK Transport Department Special Traffic News v2 XML (`agent/sources/traffic.py`). 2-min cache. Returns incidents matched by district/street/landmark; falls back to feed-wide top-15 if no match.
-
 **Not built yet** (do NOT add unless asked):
-- Remaining 6 tools still stubbed (returns marked `"source": "STUB — …"`)
 - Streaming for the dialogue phase (orchestrator uses non-streaming `messages.create`)
 - Voice integration
 - Multi-language output (English-only system prompts)
@@ -80,10 +91,15 @@ agent/
   config.py         AgentConfig (model, effort, max_tokens), ElderProfile
   schemas.py        Pydantic: Scenario, ScenarioOption, Critique, Phase enum
   prompts.py        Three phase-aware system prompts
-  tools.py          @tool decorator, REGISTRY, 8 tools (1 real, 7 stubbed)
-  sources/          One file per real HK API (network + parsing). Imported by tools.py.
+  tools.py          @tool decorator, REGISTRY, 14 tools (10 LIVE, 4 STUB)
+  sources/          One file per real HK API. Pure fetch+parse, no decorators.
+    weather.py      HK Observatory current + 9-day forecast
     aqhi.py         HK EPD Air Quality Health Index (RSS, hourly)
     traffic.py      HK TD Special Traffic News v2 (XML, real-time)
+    mtr.py          MTR Next Train + MTR Bus (data.gov.hk)
+    news.py         Hong Kong Free Press RSS
+    web.py          Firecrawl search + scrape (needs FIRECRAWL_API_KEY)
+    calendar.py     Google Calendar (needs GOOGLE_CALENDAR_API_KEY)
   persistence.py    Store class — SQLite (sessions, turns)
   orchestrator.py   THE main loop. _run_tool_loop is the heart.
 app.py              FastAPI surface
