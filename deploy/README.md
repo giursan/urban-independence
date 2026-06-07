@@ -7,9 +7,9 @@ This deployment runs four containers:
 - `gateway`: Caddy reverse proxy. It serves the web app and forwards API paths.
 - `ngrok`: public HTTPS tunnel to the gateway.
 
-Use one reserved ngrok domain if possible. Dynamic ngrok URLs work for quick tests,
-but they are awkward because Supabase redirects, the iPhone app, Telegram, and Twilio
-all need stable callback URLs.
+This uses ngrok's normal free dynamic tunnel by default. The URL changes whenever
+ngrok restarts, so Supabase redirects, the iPhone app, Telegram, and Twilio need
+to be updated after each new tunnel URL.
 
 ## 1. Prepare env
 
@@ -23,12 +23,18 @@ cp .env.example .env
 Fill `deploy/.env` with real values. Set:
 
 ```bash
-PUBLIC_ORIGIN=https://your-static-domain.ngrok-free.app
-NGROK_DOMAIN=your-static-domain.ngrok-free.app
 NGROK_AUTHTOKEN=...
 ```
 
-For Supabase auth, add the same `PUBLIC_ORIGIN` in the Supabase dashboard:
+After startup, get the generated ngrok URL:
+
+```bash
+docker compose -f deploy/compose.yml --env-file deploy/.env logs ngrok
+```
+
+Look for `url=https://...ngrok-free.app`. Use that URL as `PUBLIC_ORIGIN`.
+
+For Supabase auth, add the same ngrok URL in the Supabase dashboard:
 
 - Authentication -> URL Configuration -> Site URL
 - Authentication -> URL Configuration -> Redirect URLs
@@ -48,7 +54,7 @@ docker compose -f deploy/compose.yml --env-file deploy/.env ps
 curl http://localhost:${GATEWAY_PORT:-8088}/health
 ```
 
-Open `PUBLIC_ORIGIN` in a browser. The web app uses same-origin API calls, so `/chat`,
+Open the ngrok URL in a browser. The web app uses same-origin API calls, so `/chat`,
 `/voice`, `/telegram/webhook`, and the share/report endpoints are all served through
 the same ngrok URL.
 
@@ -57,7 +63,7 @@ the same ngrok URL.
 Point the iOS app at the ngrok URL:
 
 ```swift
-static let apiBaseURL = URL(string: "https://your-static-domain.ngrok-free.app")!
+static let apiBaseURL = URL(string: "https://your-generated-url.ngrok-free.app")!
 ```
 
 Because this is HTTPS, you do not need LAN IPs or local-network exceptions for normal use.
@@ -68,14 +74,14 @@ Telegram webhook:
 
 ```bash
 curl "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook" \
-  -d "url=https://your-static-domain.ngrok-free.app/telegram/webhook" \
+  -d "url=https://your-generated-url.ngrok-free.app/telegram/webhook" \
   -d "secret_token=$TELEGRAM_WEBHOOK_SECRET"
 ```
 
 Twilio Voice webhook:
 
 ```text
-POST https://your-static-domain.ngrok-free.app/voice
+POST https://your-generated-url.ngrok-free.app/voice
 ```
 
 ## 5. Update
