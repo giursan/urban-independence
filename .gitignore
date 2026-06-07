@@ -1,5 +1,27 @@
+# Local environment / secrets - never commit. Use .env.example as the template.
 .env
+.env.*
+!.env.example
+!.env.*.example
+
+# Python
 .venv/
 __pycache__/
-*.pyc
+*.py[oc]
+*.egg-info/
+
+# Node / Next
+node_modules/
+.next/
+
+# Local/generated leftovers
+agent/
+apps/api/supabase/
+data/
+*.db
+*.db-journal
+
+# OS / IDE
 .DS_Store
+.vscode/
+.idea/
