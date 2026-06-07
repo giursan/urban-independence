@@ -45,7 +45,7 @@ Then check:
 
 ```bash
 docker compose -f deploy/compose.yml --env-file deploy/.env ps
-curl http://localhost:8080/health
+curl http://localhost:${GATEWAY_PORT:-8088}/health
 ```
 
 Open `PUBLIC_ORIGIN` in a browser. The web app uses same-origin API calls, so `/chat`,
