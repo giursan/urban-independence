@@ -25,6 +25,9 @@ class _Chain:
         self.store = store
         self.name = name
         self._payload = None
+        self._filters: list[tuple[str, object]] = []
+        self._order: tuple[str, bool] | None = None
+        self._limit: int | None = None
 
     def insert(self, payload):
         self._payload = payload
@@ -42,21 +45,38 @@ class _Chain:
         return self
 
     def eq(self, *a, **k):
+        if a:
+            self._filters.append((a[0], a[1]))
         return self
 
     def gte(self, *a, **k):
         return self
 
     def order(self, *a, **k):
+        if a:
+            self._order = (a[0], bool(k.get("desc", False)))
         return self
 
     def limit(self, *a, **k):
+        if a:
+            self._limit = int(a[0])
         return self
 
     def execute(self):
         if self._payload is not None:
-            self.store.setdefault(self.name, []).append(self._payload)
-        return type("Res", (), {"data": []})()
+            payloads = self._payload if isinstance(self._payload, list) else [self._payload]
+            self.store.setdefault(self.name, []).extend(payloads)
+            return type("Res", (), {"data": payloads})()
+
+        rows = list(self.store.get(self.name, []))
+        for field, value in self._filters:
+            rows = [row for row in rows if row.get(field) == value]
+        if self._order is not None:
+            field, desc = self._order
+            rows.sort(key=lambda row: row.get(field) or "", reverse=desc)
+        if self._limit is not None:
+            rows = rows[: self._limit]
+        return type("Res", (), {"data": rows})()
 
 
 class FakeDB:

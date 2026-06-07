@@ -13,3 +13,13 @@ export interface Snapshot {
   confidence: number;
   disclaimer: string;
 }
+
+export interface CompanionFact {
+  id: string;
+  category: string;
+  title: string;
+  content: string;
+  tags: string[];
+  importance: number;
+  updated_at: string;
+}

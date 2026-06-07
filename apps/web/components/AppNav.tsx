@@ -6,6 +6,7 @@ import { FontSizeControl } from "./FontSizeControl";
 
 const LINKS = [
   { href: "/talk", label: "Talk" },
+  { href: "/care", label: "Care" },
   { href: "/me", label: "Summaries" },
 ];
 
