@@ -22,6 +22,7 @@ from ..persistence import (
     get_or_create_conversation,
     log_safety_event,
     persist_new_messages,
+    persist_user_message,
 )
 from ..safety import screen_text
 from ..supabase_client import user_client
@@ -60,6 +61,10 @@ async def chat(request: Request, user: AuthedUser = Depends(current_user)):
     db = user_client(user.token)
     profile = fetch_profile(db, user.id)
     conversation_id = get_or_create_conversation(db, user.id, conversation_id, mode)
+
+    # Persist the user's turn now: the adapter loads it as history, so it won't
+    # appear in result.new_messages() (which carries only the assistant reply).
+    persist_user_message(db, conversation_id, user.id, last_user)
 
     # Best-effort crisis screen on the newest user message.
     assessment = screen_text(last_user)
