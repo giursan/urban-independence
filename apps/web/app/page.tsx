@@ -23,7 +23,7 @@ export default function Home() {
         </div>
         <div className="flex aspect-square items-center justify-center rounded-2xl bg-background p-5">
           <Image
-            src="/companion-logo.png"
+            src="/icon.svg"
             alt=""
             width={320}
             height={320}

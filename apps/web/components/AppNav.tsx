@@ -31,7 +31,7 @@ export function AppNav({ userName }: { userName?: string | null }) {
           aria-label="Companion home"
         >
           <Image
-            src="/companion-logo.png"
+            src="/icon.svg"
             alt=""
             width={56}
             height={56}
