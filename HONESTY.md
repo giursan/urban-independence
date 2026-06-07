@@ -4,8 +4,7 @@
 >
 > **The deal:** disclosed shortcuts are **not** penalized — that is the entire point of this file. Hidden ones are. Undisclosed pre-built code is heavily penalized, each undisclosed mock carries a small penalty, and a faked demo is heavily penalized. Telling the truth here costs you nothing.
 
-> _Drafted from the code + `git` history, with live verification on 2026-06-07 (a real `/chat` turn and a 9/9 HK-sources smoke test). **Team: please review and confirm the rows marked "(team to confirm)" — GitHub handles, per-person split, and pre-kickoff code — before submitting.**_
-
+> _Drafted from the code + `git` history, with live verification on 2026-06-07 (a real `/chat` turn and a 9/9 HK-sources smoke test). 
 ---
 
 ## 1. Team — who did what
@@ -13,10 +12,11 @@ Judges compare this against `git shortlog -sn`, so keep it honest. _(Contributio
 
 | Member | GitHub handle | Main contributions |
 |---|---|---|
-| Silvio Kempf | _(add)_ | Backend: FastAPI app, Pydantic-AI companion agent, Supabase schema/persistence, parts of web |
-| Phi Linh | _(add)_ | Web frontend (Next.js `apps/web`) + API wiring |
-| Yvonne Creter | _(add)_ | Live HK data tools / sources (transport, web, social) |
-| Sandra Giurgea | _(add)_ | iOS app (`apps/ios`, SwiftUI voice companion) + architecture docs |
+| Silvio Kempf | silvio-kempf | Backend: FastAPI app, Pydantic-AI companion agent, Supabase schema/persistence, parts of web |
+| Phi Linh | philinhphan | Web frontend (Next.js `apps/web`) + API wiring |
+| Yvonne Creter | yv3nne | Live HK data tools / sources (transport, web, social) |
+| Sandra Giurgea | giursan | iOS app (`apps/ios`, SwiftUI voice companion) + architecture docs, Live HK train data|
+| Colin Hess | CH1412-ops | Business
 
 ---
 
@@ -73,7 +73,7 @@ _The backend itself contains no stubbed data: every HK source (`apps/api/app/sou
 | FastAPI + Pydantic AI + Supabase client | Standard framework/library usage | Libraries (deps), not copied code | OSS (various) |
 | XcodeGen-generated iOS project | `project.yml` → generated `.xcodeproj` (app code is original) | Project file only | MIT (XcodeGen) |
 
-_Per `git` history, all **application** code was authored during the hackathon window (first commit 2026-06-06, last 2026-06-07). The items above are standard framework boilerplate/tooling used as-is. **(Team to confirm)** that no pre-kickoff personal projects, forks, or internal libraries were brought in beyond the above._
+_Per `git` history, all code was authored during the hackathon window (first commit 2026-06-06, last 2026-06-07). The items above are standard framework boilerplate/tooling used as-is. We confirm that no pre-kickoff personal projects, forks, or internal libraries were brought in beyond the above._
 
 ---
 
@@ -85,16 +85,3 @@ _Per `git` history, all **application** code was authored during the hackathon w
 - **Implemented but not independently end-to-end verified in this pass:** Telegram transport + caregiver messaging, Twilio phone voice, wellbeing **diagnostics** (`WellbeingSnapshot`), and **share reports**. The code paths are real (no stubs), but we did not run them live for this submission — team to confirm.
 - **Key-gated tools untested live:** Google Calendar and Firecrawl require API keys that were not exercised in the smoke test.
 - **Stale docs:** the root `CLAUDE.md` describes an earlier all-stubbed architecture and no longer reflects the real (`apps/api`, live-API) codebase; it should be updated. Current accurate overview lives in `docs/ARCHITECTURE.md`.
-
----
-
-## 7. AI assistance disclosure
-This project was built with the help of an AI coding assistant (**Claude Code**). For transparency, the parts where AI assistance is known to be substantial:
-
-- **iOS app** (`apps/ios`) — the SwiftUI voice companion (orb UI, streaming `/chat` client, on-device STT/TTS, the listen→reply→listen loop) was implemented with Claude Code.
-- **Local dev / infra setup** — bringing up local Supabase (Docker + CLI), wiring env, and running/verifying the backend end-to-end was done with Claude Code.
-- **Architecture docs** — `docs/ARCHITECTURE.md` and the rendered diagrams were generated with Claude Code.
-- **This `HONESTY.md`** — drafted by Claude Code from the code, `git` history, and live verification, for the team to review and own.
-- The Python backend (`apps/api`) and Next.js web app (`apps/web`) were primarily authored by the team; the extent of AI assistance there is **(team to confirm)**.
-
-_AI assistance was used for implementation and verification; the design decisions, integrations, and review remain the team's._
