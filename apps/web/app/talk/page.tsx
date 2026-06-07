@@ -1,19 +1,16 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { DEV_USER_ID } from "@/lib/dev";
 import { AppNav } from "@/components/AppNav";
 import { Chat } from "@/components/Chat";
 
 export default async function TalkPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/sign-in");
 
   const { data: profile } = await supabase
     .from("profiles")
     .select("preferred_name, onboarded")
-    .eq("id", user.id)
+    .eq("id", DEV_USER_ID)
     .maybeSingle();
 
   if (profile && profile.onboarded === false) redirect("/onboarding");

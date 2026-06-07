@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { DEV_USER_ID } from "@/lib/dev";
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -19,13 +20,6 @@ export default function OnboardingPage() {
     setBusy(true);
     setErr("");
     const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      router.push("/sign-in");
-      return;
-    }
     const { error } = await supabase
       .from("profiles")
       .update({
@@ -41,7 +35,7 @@ export default function OnboardingPage() {
         },
         onboarded: true,
       })
-      .eq("id", user.id);
+      .eq("id", DEV_USER_ID);
     setBusy(false);
     if (error) setErr(error.message);
     else {

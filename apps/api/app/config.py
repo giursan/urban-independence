@@ -21,6 +21,11 @@ class Settings:
     supabase_service_role_key: str = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
     supabase_jwt_secret: str = os.getenv("SUPABASE_JWT_SECRET", "")
 
+    # Dev / test: auth is removed; all requests run as this fixed user.
+    # Must match DEV_USER_ID in apps/web and the seeded profile in
+    # supabase/migrations/0002_dev_disable_auth.sql.
+    dev_user_id: str = os.getenv("DEV_USER_ID", "00000000-0000-0000-0000-000000000001")
+
     # CORS
     allowed_origins: list[str] = [
         o.strip() for o in os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",") if o.strip()

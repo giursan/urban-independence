@@ -1,4 +1,4 @@
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AppNav } from "@/components/AppNav";
 import { ReportView } from "@/components/ReportView";
@@ -13,10 +13,6 @@ export default async function ReportPage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/sign-in");
 
   const { data: snap } = await supabase
     .from("wellbeing_snapshots")

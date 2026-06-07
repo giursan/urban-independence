@@ -56,6 +56,24 @@ def _rows_from_messages(messages: list[Any]) -> list[tuple[str, str]]:
     return rows
 
 
+def persist_user_message(db: Any, conversation_id: str, user_id: str, text: str) -> None:
+    """Persist the newest user turn.
+
+    The Vercel AI adapter loads incoming messages as history, so the user prompt
+    never appears in `result.new_messages()` — we must store it explicitly or the
+    transcript ends up one-sided (assistant only)."""
+    if not text or not text.strip():
+        return
+    db.table("messages").insert(
+        {
+            "conversation_id": conversation_id,
+            "user_id": user_id,
+            "role": "user",
+            "content": text,
+        }
+    ).execute()
+
+
 def persist_new_messages(db: Any, conversation_id: str, user_id: str, messages: list[Any]) -> None:
     rows = _rows_from_messages(messages)
     if not rows:

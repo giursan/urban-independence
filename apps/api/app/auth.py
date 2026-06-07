@@ -1,15 +1,15 @@
-"""Supabase JWT verification as a FastAPI dependency.
+"""Auth dependency — DISABLED for direct testing.
 
-v1 verifies the HS256 access token with the project's JWT secret. For projects
-using asymmetric (RS256/ES256) signing keys, swap in JWKS verification here —
-the rest of the app only depends on the returned `AuthedUser`.
+Authentication has been removed so the app runs without sign-in: every request
+is treated as the fixed dev user (settings.dev_user_id). To restore real auth,
+verify the Supabase JWT here (HS256 with settings.supabase_jwt_secret, or JWKS
+for asymmetric keys) and return the decoded subject as the AuthedUser id.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
-import jwt
-from fastapi import HTTPException, Request, status
+from fastapi import Request
 
 from .config import settings
 
@@ -17,30 +17,11 @@ from .config import settings
 @dataclass
 class AuthedUser:
     id: str
-    token: str
-    claims: dict
-
-
-def _bearer(request: Request) -> str:
-    header = request.headers.get("authorization", "")
-    if not header.lower().startswith("bearer "):
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Missing bearer token")
-    return header.split(" ", 1)[1].strip()
+    token: str = ""
+    claims: dict = field(default_factory=dict)
 
 
 async def current_user(request: Request) -> AuthedUser:
-    token = _bearer(request)
-    try:
-        claims = jwt.decode(
-            token,
-            settings.supabase_jwt_secret,
-            algorithms=["HS256"],
-            audience="authenticated",
-        )
-    except Exception as exc:  # noqa: BLE001 - surface any decode/verify failure as 401
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, f"Invalid token: {exc}") from exc
-
-    user_id = claims.get("sub")
-    if not user_id:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Token has no subject")
-    return AuthedUser(id=user_id, token=token, claims=claims)
+    # No token verification: act as the single dev user. An empty token makes
+    # user_client() fall back to the service-role client (which bypasses RLS).
+    return AuthedUser(id=settings.dev_user_id, token="", claims={})
