@@ -2,23 +2,24 @@
 
 import { useEffect } from "react";
 
+// The bundled service worker is currently a self-unregistering kill switch
+// (a previous caching version caused an HMR reload loop). We intentionally do
+// NOT register a worker here; this component only cleans up any worker and
+// caches left over from before, so existing browsers fully recover.
+// Re-enable registration (production only) once a dev-safe SW is ready.
 export function RegisterSW() {
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
-
-    // In dev mode, the stale-while-revalidate cache in /sw.js fights with
-    // Turbopack's rebuilds (cached HTML points at old chunk hashes), causing
-    // an infinite reload loop. Only run the PWA worker in production.
-    if (process.env.NODE_ENV !== "production") {
-      // Also actively unregister any worker installed by a previous build —
-      // otherwise stale registrations from earlier sessions persist.
-      navigator.serviceWorker.getRegistrations().then((regs) => {
-        for (const r of regs) r.unregister();
-      });
-      return;
+    navigator.serviceWorker
+      .getRegistrations()
+      .then((regs) => regs.forEach((r) => r.unregister()))
+      .catch(() => {});
+    if (typeof caches !== "undefined") {
+      caches
+        .keys()
+        .then((keys) => keys.forEach((k) => caches.delete(k)))
+        .catch(() => {});
     }
-
-    navigator.serviceWorker.register("/sw.js").catch(() => {});
   }, []);
   return null;
 }
