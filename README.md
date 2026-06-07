@@ -254,4 +254,7 @@ confirm it 404s.
   user) — both predate per-user auth and need wiring up before multi-user use. Also designed-for but
   not built: OpenAI Realtime streaming voice, full caregiver accounts/dashboards, scheduled cron
   diagnostics, i18n, and validated check-in scales.
+
+## Demonstration
+- Technical Demo: https://youtu.be/VgCcMsIHqFI
 ```
