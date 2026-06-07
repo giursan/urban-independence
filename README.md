@@ -26,6 +26,9 @@ supabase   Postgres + pgvector schema, RLS, and RPCs (migrations/0001_init.sql)
 - **Phone** flows from Twilio Voice webhooks → FastAPI `/voice`; each `CallSid` maps
   to a persisted conversation, so phone transcripts feed the same memory, safety, and
   wellbeing-summary pipeline as web chat.
+- **Telegram** flows from Telegram Bot API webhooks → FastAPI `/telegram/webhook`;
+  each Telegram chat maps to a persisted conversation. The companion can also use
+  `send_telegram_message` to notify a configured caregiver when appropriate.
 - **Memory/continuity**: OpenAI embeddings + pgvector (`match_memories` RPC); the agent has
   `save_memory` / `recall_memory` / `log_mood` tools, and relevant memories are injected as
   dynamic instructions each turn.
@@ -79,6 +82,12 @@ For phone demos, expose the API with a public URL such as ngrok and set the Twil
 Voice webhook for the number to `POST https://<your-public-api>/voice`. The app
 does not need the Twilio SDK for inbound `<Gather>` calls.
 
+For Telegram demos, create a bot with `@BotFather`, set `TELEGRAM_BOT_TOKEN`, and
+configure the webhook to `POST https://<your-public-api>/telegram/webhook`. If you
+set `TELEGRAM_WEBHOOK_SECRET`, pass the same value as Telegram's webhook
+`secret_token`. Set `TELEGRAM_CAREGIVER_CHAT_ID` to enable the caregiver messaging
+tool without passing an explicit chat id.
+
 ## 3) Frontend (apps/web)
 
 ```bash
@@ -93,7 +102,7 @@ summary from **Summaries**, then download the PDF or create a share link.
 ## Testing & verification
 
 ```bash
-# Backend: agent tools, voice TwiML, safety, diagnostics (uses Pydantic AI TestModel — no API key needed)
+# Backend: agent tools, voice/Telegram transports, safety, diagnostics (uses Pydantic AI TestModel — no API key needed)
 uv run --directory apps/api pytest -q
 
 # Frontend: type-check + production build
@@ -117,6 +126,7 @@ download PDF → create a share link → open it in a private window → revoke 
 ## What's implemented vs. deferred
 
 - ✅ Accessible chat PWA, auth + onboarding, adaptive companion behavior, Twilio phone calls,
+  Telegram bot transport + caregiver messaging tool,
   long-term memory, crisis safety, wellbeing diagnostics, PDF export, consented expiring share links, full RLS.
 - ⏭️ Deferred (designed-for): OpenAI Realtime voice, caregiver accounts/dashboard, scheduled
   cron diagnostics, i18n, validated check-in scales.

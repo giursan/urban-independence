@@ -31,6 +31,11 @@ class Settings:
         o.strip() for o in os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",") if o.strip()
     ]
 
+    # Telegram transport/tooling
+    telegram_bot_token: str = os.getenv("TELEGRAM_BOT_TOKEN", "")
+    telegram_caregiver_chat_id: str = os.getenv("TELEGRAM_CAREGIVER_CHAT_ID", "")
+    telegram_webhook_secret: str = os.getenv("TELEGRAM_WEBHOOK_SECRET", "")
+
     @property
     def model_str(self) -> str:
         return f"openai:{self.openai_model}"

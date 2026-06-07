@@ -5,8 +5,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
-from .routes import chat, conversations, diagnostics, reports, voice
+from .routes import chat, conversations, diagnostics, reports, telegram, voice
 from . import hk_tools  # noqa: F401 — import-time registers live HK tools on companion_agent
+from . import telegram_tools  # noqa: F401 — registers Telegram caregiver messaging tool
 
 app = FastAPI(title="Agentic Companion API")
 
@@ -28,4 +29,5 @@ app.include_router(chat.router)
 app.include_router(conversations.router)
 app.include_router(diagnostics.router)
 app.include_router(reports.router)
+app.include_router(telegram.router)
 app.include_router(voice.router)

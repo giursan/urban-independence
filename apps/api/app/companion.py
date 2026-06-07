@@ -11,7 +11,7 @@ import json
 from pydantic_ai import Agent, RunContext
 
 from .deps import CompanionDeps
-from .persona import ADAPTIVE_OVERLAY, BASE_PERSONA, PHONE_OVERLAY  # MODE_OVERLAYS retired — see persona.py
+from .persona import ADAPTIVE_OVERLAY, BASE_PERSONA, PHONE_OVERLAY, TELEGRAM_OVERLAY
 
 # Model is supplied per-run (see routes/chat.py) so importing this module never
 # requires an OpenAI key — which keeps tests and `/health` working offline.
@@ -32,6 +32,8 @@ async def contextual_instructions(ctx: RunContext[CompanionDeps]) -> str:
     lines: list[str] = [ADAPTIVE_OVERLAY]
     if deps.mode == "phone":
         lines.append(PHONE_OVERLAY)
+    elif deps.mode == "telegram":
+        lines.append(TELEGRAM_OVERLAY)
     lines.append(f"You are speaking with {profile.address_name}.")
     if profile.interests:
         lines.append(f"Their interests include: {', '.join(profile.interests)}.")
