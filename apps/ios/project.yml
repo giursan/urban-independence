@@ -1,4 +1,4 @@
-name: CompanionApp
+name: Aporia
 options:
   bundleIdPrefix: com.urbanindependence
   deploymentTarget:
@@ -10,7 +10,7 @@ settings:
     SWIFT_VERSION: "5.0"
     GENERATE_INFOPLIST_FILE: NO
 targets:
-  CompanionApp:
+  Aporia:
     type: application
     platform: iOS
     sources:
@@ -18,6 +18,6 @@ targets:
     settings:
       base:
         INFOPLIST_FILE: CompanionApp/Info.plist
-        PRODUCT_BUNDLE_IDENTIFIER: com.urbanindependence.companion
+        PRODUCT_BUNDLE_IDENTIFIER: com.urbanindependence.aporia
         TARGETED_DEVICE_FAMILY: "1"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon

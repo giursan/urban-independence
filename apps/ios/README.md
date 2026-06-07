@@ -1,6 +1,6 @@
-# Companion — iOS app
+# Aporia — iOS app
 
-A native SwiftUI client for the companion backend (`apps/api`). Single-screen,
+A native SwiftUI client for the Aporia backend (`apps/api`). Single-screen,
 streaming text chat, designed with large type for older users.
 
 ## What it does
@@ -36,13 +36,13 @@ voice exist in the backend but are not wired into this app yet.
 
    ```bash
    xcodegen generate
-   open CompanionApp.xcodeproj
+   open Aporia.xcodeproj
    ```
 
    Then pick an iPhone simulator and press Run. Or from the CLI:
 
    ```bash
-   xcodebuild -project CompanionApp.xcodeproj -scheme CompanionApp \
+   xcodebuild -project Aporia.xcodeproj -scheme Aporia \
      -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build
    ```
 

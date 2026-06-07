@@ -7,7 +7,7 @@ struct ChatView: View {
     @State private var input = ""
     @FocusState private var inputFocused: Bool
 
-    private let greeting = "Hello! I'm your companion. How are you feeling today?"
+    private let greeting = "Hello! I'm Aporia. What would you like to think through today?"
 
     private var isListening: Bool { recognizer.state == .listening }
 

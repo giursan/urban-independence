@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-	<string>Companion</string>
+	<string>Aporia</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -34,8 +34,8 @@
 		<true/>
 	</dict>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>The companion listens to your voice so you can talk instead of typing.</string>
+	<string>Aporia listens to your voice so you can talk instead of typing.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>Your speech is turned into text so the companion can understand you.</string>
+	<string>Your speech is turned into text so Aporia can understand you.</string>
 </dict>
 </plist>

@@ -1,7 +1,7 @@
 import AVFoundation
 import Foundation
 
-/// Reads the companion's replies aloud with the system text-to-speech voice.
+/// Reads Aporia's replies aloud with the system text-to-speech voice.
 /// A slightly slower-than-default rate suits older listeners. `onFinish` fires
 /// on the main actor when speech completes — the voice loop uses it to resume
 /// listening.

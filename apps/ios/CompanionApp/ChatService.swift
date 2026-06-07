@@ -100,7 +100,7 @@ struct ChatService {
                         case "text":
                             if let t = event.text { continuation.yield(t) }
                         case "error":
-                            throw ChatError.server(event.errorText ?? "The companion ran into an error.")
+                            throw ChatError.server(event.errorText ?? "Aporia ran into an error.")
                         default:
                             continue
                         }

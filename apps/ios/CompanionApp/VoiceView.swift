@@ -1,14 +1,14 @@
 import SwiftUI
 
-/// Full-screen, voice-only companion for elderly users. Tap to begin, then just
-/// talk — the orb listens, the companion replies aloud, and listening resumes
+/// Full-screen, voice-only Aporia experience. Tap to begin, then just
+/// talk — the orb listens, Aporia replies aloud, and listening resumes
 /// automatically. No typing.
 struct VoiceView: View {
     @State private var model = VoiceConversationViewModel()
 
     private var statusText: String {
         switch model.state {
-        case .idle:      return "Tap to talk with your companion"
+        case .idle:      return "Tap to talk with Aporia"
         case .listening: return "I'm listening…"
         case .thinking:  return "Thinking…"
         case .speaking:  return "Speaking…"
