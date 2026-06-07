@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -28,16 +27,11 @@ export function AppNav({ userName }: { userName?: string | null }) {
         <Link
           href="/talk"
           className="flex h-14 w-14 items-center justify-center rounded-xl"
-          aria-label="Companion home"
+          aria-label="Aporia home"
         >
-          <Image
-            src="/icon.svg"
-            alt=""
-            width={56}
-            height={56}
-            className="h-12 w-12 rounded-2xl object-cover"
-            priority
-          />
+          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-foreground text-2xl font-semibold text-white">
+            A
+          </span>
         </Link>
         <div className="flex min-w-0 items-center gap-2 overflow-x-auto" role="navigation" aria-label="Main">
           {LINKS.map((l) => {

@@ -1,12 +1,11 @@
 import Link from "next/link";
-import Image from "next/image";
 
 export default function Home() {
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col justify-center px-5 py-10 sm:py-16">
       <section className="grid items-center gap-10 rounded-[1.25rem] bg-card p-6 sm:p-10 md:grid-cols-[1fr_18rem]">
         <div>
-          <p className="text-base font-semibold text-muted">Companion</p>
+          <p className="text-base font-semibold text-muted">Aporia</p>
           <h1 className="mt-3 text-5xl font-semibold leading-tight tracking-tight text-foreground">
             A friend to talk with, any time.
           </h1>
@@ -22,14 +21,9 @@ export default function Home() {
           </Link>
         </div>
         <div className="flex aspect-square items-center justify-center rounded-2xl bg-background p-5">
-          <Image
-            src="/icon.svg"
-            alt=""
-            width={320}
-            height={320}
-            className="h-full w-full rounded-[1.2rem] object-cover"
-            priority
-          />
+          <div className="flex h-full w-full items-center justify-center rounded-[1.2rem] bg-foreground text-8xl font-semibold text-white">
+            A
+          </div>
         </div>
       </section>
     </main>

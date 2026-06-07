@@ -6,10 +6,10 @@ import { RegisterSW } from "@/components/RegisterSW";
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Companion",
+  title: "Aporia",
   description: "A warm AI companion to talk, reflect, and stay connected.",
   manifest: "/manifest.webmanifest",
-  appleWebApp: { capable: true, title: "Companion", statusBarStyle: "default" },
+  appleWebApp: { capable: true, title: "Aporia", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {
