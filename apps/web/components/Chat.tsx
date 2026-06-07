@@ -4,6 +4,7 @@ import { type UIMessage, useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { API_BASE } from "@/lib/api";
+import { createClient } from "@/lib/supabase/client";
 import { CrisisBanner } from "./CrisisBanner";
 
 const CRISIS_RE = /\b(kill myself|killing myself|want to die|end my life|suicid|hurt myself|harm myself)\b/i;
@@ -27,6 +28,16 @@ export function Chat({
     () =>
       new DefaultChatTransport({
         api: `${API_BASE}/chat`,
+        // Attach the signed-in user's Supabase JWT so the API can verify it
+        // and apply RLS (mirrors apiFetch). Resolved fresh on each send.
+        headers: async (): Promise<Record<string, string>> => {
+          const {
+            data: { session },
+          } = await createClient().auth.getSession();
+          return session?.access_token
+            ? { Authorization: `Bearer ${session.access_token}` }
+            : {};
+        },
         body: () => ({ conversation_id: conversationId }),
       }),
     [conversationId],
