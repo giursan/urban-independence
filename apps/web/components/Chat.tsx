@@ -4,8 +4,6 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { API_BASE } from "@/lib/api";
-import { type Mode, MODES } from "@/lib/modes";
-import { ModeSwitcher } from "./ModeSwitcher";
 import { CrisisBanner } from "./CrisisBanner";
 
 const CRISIS_RE = /\b(kill myself|killing myself|want to die|end my life|suicid|hurt myself|harm myself)\b/i;
@@ -15,21 +13,15 @@ export function Chat({ greeting }: { greeting: string }) {
     () => (typeof crypto !== "undefined" ? crypto.randomUUID() : String(Date.now())),
     [],
   );
-  const [mode, setMode] = useState<Mode>("companion");
-  const modeRef = useRef<Mode>(mode);
   const [crisis, setCrisis] = useState(false);
   const [input, setInput] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    modeRef.current = mode;
-  }, [mode]);
 
   const transport = useMemo(
     () =>
       new DefaultChatTransport({
         api: `${API_BASE}/chat`,
-        body: () => ({ conversation_id: conversationId, mode: modeRef.current }),
+        body: () => ({ conversation_id: conversationId }),
       }),
     [conversationId],
   );
@@ -51,15 +43,8 @@ export function Chat({ greeting }: { greeting: string }) {
     setInput("");
   }
 
-  const activeHint = MODES.find((m) => m.id === mode)?.hint;
-
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 px-4 py-5">
-      <div className="flex flex-col gap-2">
-        <ModeSwitcher value={mode} onChange={setMode} />
-        {activeHint ? <p className="text-base text-muted">{activeHint}</p> : null}
-      </div>
-
       {crisis ? <CrisisBanner onDismiss={() => setCrisis(false)} /> : null}
 
       <div
