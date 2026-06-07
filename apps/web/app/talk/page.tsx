@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { DEV_USER_ID } from "@/lib/dev";
 import { AppNav } from "@/components/AppNav";
-import { Chat } from "@/components/Chat";
+import { ConversationWorkspace } from "@/components/ConversationWorkspace";
 
 export default async function TalkPage() {
   const supabase = await createClient();
@@ -23,7 +23,7 @@ export default async function TalkPage() {
   return (
     <div className="flex flex-1 flex-col">
       <AppNav userName={name} />
-      <Chat greeting={greeting} />
+      <ConversationWorkspace greeting={greeting} />
     </div>
   );
 }

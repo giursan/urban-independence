@@ -1,6 +1,6 @@
 "use client";
 
-import { useChat } from "@ai-sdk/react";
+import { type UIMessage, useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { API_BASE } from "@/lib/api";
@@ -8,11 +8,17 @@ import { CrisisBanner } from "./CrisisBanner";
 
 const CRISIS_RE = /\b(kill myself|killing myself|want to die|end my life|suicid|hurt myself|harm myself)\b/i;
 
-export function Chat({ greeting }: { greeting: string }) {
-  const conversationId = useMemo(
-    () => (typeof crypto !== "undefined" ? crypto.randomUUID() : String(Date.now())),
-    [],
-  );
+export function Chat({
+  greeting,
+  conversationId,
+  initialMessages = [],
+  onActivity,
+}: {
+  greeting: string;
+  conversationId: string;
+  initialMessages?: UIMessage[];
+  onActivity?: () => void;
+}) {
   const [crisis, setCrisis] = useState(false);
   const [input, setInput] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
@@ -26,7 +32,12 @@ export function Chat({ greeting }: { greeting: string }) {
     [conversationId],
   );
 
-  const { messages, sendMessage, status, error } = useChat({ transport });
+  const { messages, sendMessage, status, error } = useChat({
+    id: conversationId,
+    messages: initialMessages,
+    transport,
+    onFinish: () => onActivity?.(),
+  });
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
