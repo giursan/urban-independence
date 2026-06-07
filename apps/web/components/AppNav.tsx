@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { LOGO_SRC } from "@/lib/logo";
 import { createClient } from "@/lib/supabase/client";
 import { FontSizeControl } from "./FontSizeControl";
 
@@ -31,7 +32,7 @@ export function AppNav({ userName }: { userName?: string | null }) {
           aria-label="Aporia home"
         >
           <Image
-            src="/companion-logo.png"
+            src={LOGO_SRC}
             alt="Aporia"
             width={48}
             height={48}

@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { LOGO_SRC } from "@/lib/logo";
 
 export default function Home() {
   return (
@@ -23,10 +24,10 @@ export default function Home() {
         </div>
         <div className="flex aspect-square items-center justify-center rounded-2xl bg-background p-5">
           <Image
-            src="/companion-logo.png"
+            src={LOGO_SRC}
             alt="Aporia"
-            width={1254}
-            height={1254}
+            width={256}
+            height={256}
             priority
             className="h-full w-full rounded-[1.2rem] object-contain"
           />
