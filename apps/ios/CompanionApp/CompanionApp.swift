@@ -4,11 +4,9 @@ import SwiftUI
 struct CompanionApp: App {
     var body: some Scene {
         WindowGroup {
-            NavigationStack {
-                ChatView()
-                    .navigationTitle("Companion")
-                    .navigationBarTitleDisplayMode(.inline)
-            }
+            // Voice-first experience for elderly users — no typing.
+            VoiceView()
+                .preferredColorScheme(.dark)
         }
     }
 }

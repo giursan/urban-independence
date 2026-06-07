@@ -4,7 +4,8 @@ import Observation
 import Speech
 
 /// On-device speech-to-text using Apple's Speech framework. Streams a live
-/// partial transcript while the user talks; `stop()` returns the final text.
+/// partial transcript and a microphone audio level (for the orb animation)
+/// via callbacks; `stop()` returns the final text.
 ///
 /// Note: dictation works best on a physical device. On the Simulator it relies
 /// on the Mac's microphone (enable I/O → Audio Input in the Simulator menu).
@@ -19,6 +20,11 @@ final class SpeechRecognizer {
 
     private(set) var state: State = .idle
     private(set) var transcript = ""
+
+    /// Called on the main actor with the latest partial transcript.
+    var onResult: ((String) -> Void)?
+    /// Called on the main actor with a 0...1 microphone loudness for animation.
+    var onLevel: ((Double) -> Void)?
 
     private let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
     private let audioEngine = AVAudioEngine()
@@ -60,8 +66,10 @@ final class SpeechRecognizer {
 
         let input = audioEngine.inputNode
         let format = input.outputFormat(forBus: 0)
-        input.installTap(onBus: 0, bufferSize: 1024, format: format) { buffer, _ in
+        input.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
             request.append(buffer)
+            let level = Self.loudness(buffer)
+            Task { @MainActor in self?.onLevel?(level) }
         }
 
         audioEngine.prepare()
@@ -73,7 +81,10 @@ final class SpeechRecognizer {
             let finished = error != nil || (result?.isFinal ?? false)
             Task { @MainActor in
                 guard let self else { return }
-                if let text { self.transcript = text }
+                if let text {
+                    self.transcript = text
+                    self.onResult?(text)
+                }
                 if finished, self.state == .listening { _ = self.stop() }
             }
         }
@@ -91,7 +102,22 @@ final class SpeechRecognizer {
         request = nil
         task = nil
         state = .idle
+        onLevel?(0)
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         return transcript
+    }
+
+    /// Root-mean-square loudness of a buffer, scaled to a lively 0...1 range.
+    private static func loudness(_ buffer: AVAudioPCMBuffer) -> Double {
+        guard let channel = buffer.floatChannelData?[0] else { return 0 }
+        let count = Int(buffer.frameLength)
+        guard count > 0 else { return 0 }
+        var sum: Float = 0
+        for i in 0..<count {
+            let sample = channel[i]
+            sum += sample * sample
+        }
+        let rms = sqrtf(sum / Float(count))
+        return min(1.0, Double(rms) * 12.0)
     }
 }
