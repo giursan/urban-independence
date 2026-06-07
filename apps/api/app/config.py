@@ -25,6 +25,7 @@ class Settings:
     # Must match DEV_USER_ID in apps/web and the seeded profile in
     # supabase/migrations/0002_dev_disable_auth.sql.
     dev_user_id: str = os.getenv("DEV_USER_ID", "00000000-0000-0000-0000-000000000001")
+    ios_demo_token: str = os.getenv("IOS_DEMO_TOKEN", "")
 
     # CORS
     allowed_origins: list[str] = [

@@ -8,7 +8,8 @@ import Foundation
 /// add that host to NSAppTransportSecurity, since NSAllowsLocalNetworking only
 /// covers loopback/.local.
 enum AppConfig {
-    static let apiBaseURL = URL(string: "http://localhost:8000")!
+    static let apiBaseURL = URL(string: "https://apricot-chlorine-motion.ngrok-free.dev")!
+    static let demoToken = ""
 
     /// Conversation mode the backend tags new conversations with.
     static let mode = "companion"

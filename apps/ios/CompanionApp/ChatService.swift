@@ -71,6 +71,10 @@ struct ChatService {
                     request.httpMethod = "POST"
                     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
                     request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
+                    request.setValue("true", forHTTPHeaderField: "ngrok-skip-browser-warning")
+                    if !AppConfig.demoToken.isEmpty {
+                        request.setValue(AppConfig.demoToken, forHTTPHeaderField: "X-Aporia-Demo-Token")
+                    }
                     request.httpBody = try JSONEncoder().encode(body)
 
                     let (bytes, response) = try await URLSession.shared.bytes(for: request)

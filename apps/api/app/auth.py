@@ -43,6 +43,10 @@ def _decode(token: str) -> dict:
 
 
 async def current_user(request: Request) -> AuthedUser:
+    demo_token = request.headers.get("X-Aporia-Demo-Token", "")
+    if settings.ios_demo_token and demo_token and demo_token == settings.ios_demo_token:
+        return AuthedUser(id=settings.dev_user_id, token="", claims={"sub": settings.dev_user_id, "demo": True})
+
     header = request.headers.get("Authorization", "")
     if not header.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing bearer token")
