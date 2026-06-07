@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 export default function Home() {
@@ -21,9 +22,14 @@ export default function Home() {
           </Link>
         </div>
         <div className="flex aspect-square items-center justify-center rounded-2xl bg-background p-5">
-          <div className="flex h-full w-full items-center justify-center rounded-[1.2rem] bg-foreground text-8xl font-semibold text-white">
-            A
-          </div>
+          <Image
+            src="/companion-logo.png"
+            alt="Aporia"
+            width={1254}
+            height={1254}
+            priority
+            className="h-full w-full rounded-[1.2rem] object-contain"
+          />
         </div>
       </section>
     </main>

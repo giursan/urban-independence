@@ -9,6 +9,10 @@ export const metadata: Metadata = {
   title: "Aporia",
   description: "A warm AI companion to talk, reflect, and stay connected.",
   manifest: "/manifest.webmanifest",
+  icons: {
+    icon: "/companion-logo.png",
+    apple: "/companion-logo.png",
+  },
   appleWebApp: { capable: true, title: "Aporia", statusBarStyle: "default" },
 };
 
