@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { DEV_USER_ID } from "@/lib/dev";
+import { apiFetch } from "@/lib/api";
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -12,6 +12,9 @@ export default function OnboardingPage() {
   const [family, setFamily] = useState("");
   const [hometown, setHometown] = useState("");
   const [career, setCareer] = useState("");
+  const [phone, setPhone] = useState("");
+  const [secQuestion, setSecQuestion] = useState("");
+  const [secAnswer, setSecAnswer] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
 
@@ -20,6 +23,14 @@ export default function OnboardingPage() {
     setBusy(true);
     setErr("");
     const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      setBusy(false);
+      setErr("Your session expired. Please sign in again.");
+      return;
+    }
     const { error } = await supabase
       .from("profiles")
       .update({
@@ -35,13 +46,35 @@ export default function OnboardingPage() {
         },
         onboarded: true,
       })
-      .eq("id", DEV_USER_ID);
-    setBusy(false);
-    if (error) setErr(error.message);
-    else {
-      router.push("/talk");
-      router.refresh();
+      .eq("id", user.id);
+    if (error) {
+      setBusy(false);
+      setErr(error.message);
+      return;
     }
+
+    // Phone identity (optional): register the number and a security question so
+    // the voice companion can verify who is calling.
+    if (phone.trim()) {
+      await apiFetch("/profile/phone", {
+        method: "PUT",
+        body: JSON.stringify({ phone }),
+      });
+    }
+    if (secQuestion.trim() && secAnswer.trim()) {
+      await apiFetch("/security-questions", {
+        method: "POST",
+        body: JSON.stringify({
+          question: secQuestion,
+          answer: secAnswer,
+          created_by: "onboarding",
+        }),
+      });
+    }
+
+    setBusy(false);
+    router.push("/talk");
+    router.refresh();
   }
 
   const field =
@@ -95,6 +128,38 @@ export default function OnboardingPage() {
             What did you do for work?
           </label>
           <input id="career" value={career} onChange={(e) => setCareer(e.target.value)} className={field} />
+        </div>
+        <div className="space-y-2">
+          <label htmlFor="phone" className={labelCls}>
+            Your phone number (so I recognize your calls)
+          </label>
+          <input
+            id="phone"
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="+1 555 555 0100"
+            className={field}
+          />
+        </div>
+        <div className="space-y-2">
+          <label htmlFor="secQuestion" className={labelCls}>
+            A security question (if you call from another phone)
+          </label>
+          <input
+            id="secQuestion"
+            value={secQuestion}
+            onChange={(e) => setSecQuestion(e.target.value)}
+            placeholder="What was your first pet's name?"
+            className={field}
+          />
+          <input
+            id="secAnswer"
+            value={secAnswer}
+            onChange={(e) => setSecAnswer(e.target.value)}
+            placeholder="Your answer"
+            className={field}
+          />
         </div>
         <button
           type="submit"

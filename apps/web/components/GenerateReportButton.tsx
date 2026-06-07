@@ -29,7 +29,7 @@ export function GenerateReportButton() {
         type="button"
         onClick={generate}
         disabled={busy}
-        className="rounded-xl bg-primary px-6 py-3 text-lg font-bold text-primary-foreground shadow-sm disabled:opacity-50"
+        className="min-h-14 rounded-xl bg-foreground px-7 py-4 text-xl font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:bg-muted disabled:opacity-60"
       >
         {busy ? "Creating your summary…" : "Create a new summary"}
       </button>

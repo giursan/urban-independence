@@ -31,6 +31,16 @@ class Settings:
         o.strip() for o in os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",") if o.strip()
     ]
 
+    # Phone identity verification: salt mixed into security-answer hashes.
+    identity_secret: str = os.getenv("IDENTITY_SECRET", "dev-identity-secret")
+
+    # Voice (Twilio TTS): a warm Amazon Polly *neural* voice with gentle pacing,
+    # so phone calls don't sound flat and robotic. Other warm options:
+    # Polly.Amy-Neural (British), Polly.Salli-Neural, Polly.Kimberly-Neural.
+    voice_tts_voice: str = os.getenv("VOICE_TTS_VOICE", "Polly.Joanna-Neural")
+    voice_tts_rate: str = os.getenv("VOICE_TTS_RATE", "95%")
+    voice_sentence_pause_ms: int = int(os.getenv("VOICE_SENTENCE_PAUSE_MS", "350"))
+
     # Telegram transport/tooling
     telegram_bot_token: str = os.getenv("TELEGRAM_BOT_TOKEN", "")
     telegram_caregiver_chat_id: str = os.getenv("TELEGRAM_CAREGIVER_CHAT_ID", "")

@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
 from .routes import chat, conversations, diagnostics, reports, telegram, voice
+from .routes import identity as identity_routes
 from . import caregiver_tools  # noqa: F401 — registers caregiver context lookup tool
 from . import hk_tools  # noqa: F401 — import-time registers live HK tools on companion_agent
 from . import telegram_tools  # noqa: F401 — registers Telegram caregiver messaging tool
@@ -32,3 +33,4 @@ app.include_router(diagnostics.router)
 app.include_router(reports.router)
 app.include_router(telegram.router)
 app.include_router(voice.router)
+app.include_router(identity_routes.router)

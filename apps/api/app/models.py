@@ -19,6 +19,15 @@ class Profile(BaseModel):
         return self.preferred_name or self.display_name or "friend"
 
 
+class SecurityQuestion(BaseModel):
+    """A phone-verification challenge. The answer is never returned — only its
+    presence matters to callers listing questions."""
+
+    id: str
+    question: str
+    created_by: str = "onboarding"
+
+
 class WellbeingSnapshot(BaseModel):
     """Non-clinical, conversation-derived wellbeing indicators for a relative."""
 
@@ -28,6 +37,17 @@ class WellbeingSnapshot(BaseModel):
     engagement_level: int = Field(ge=1, le=5)
     loneliness_signal: int = Field(ge=1, le=5, description="1 = well-connected, 5 = notably lonely")
     conversational_markers: str = Field(description="Descriptive, non-diagnostic notes on expression.")
+    cognitive_concern_level: int = Field(
+        ge=1,
+        le=5,
+        default=1,
+        description="1 = no notable cognitive/communication concern observed, 5 = strong reason for family follow-up",
+    )
+    cognitive_observations: str = Field(
+        default="",
+        description="Non-diagnostic notes on memory, orientation, coherence, repetition, and comprehension signals.",
+    )
+    cognitive_flags: list[str] = Field(default_factory=list)
     topics_of_interest: list[str] = Field(default_factory=list)
     highlights: list[str] = Field(default_factory=list)
     gentle_followups: list[str] = Field(default_factory=list)

@@ -2,15 +2,15 @@
 
 :root {
   --font-scale: 1;
-  --background: #fbf7f0; /* warm cream, easy on the eyes */
-  --foreground: #1f2937; /* slate-800, high contrast on cream */
+  --background: #f7f7f5;
+  --foreground: #171717;
   --card: #ffffff;
-  --card-foreground: #1f2937;
-  --primary: #1d4ed8; /* accessible blue (AA on white) */
+  --card-foreground: #171717;
+  --primary: #2563eb;
   --primary-foreground: #ffffff;
-  --muted: #57534e;
-  --border: #e7e0d6;
-  --accent: #9a3412; /* warm terracotta */
+  --muted: #6b7280;
+  --border: #e5e5e0;
+  --accent: #047857;
   --danger: #b91c1c;
 }
 
@@ -31,11 +31,31 @@
 /* 18px base, scaled by the user's font-size control. rem units scale with it. */
 html {
   font-size: calc(112.5% * var(--font-scale));
+  scrollbar-gutter: stable;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
+  min-width: 320px;
+}
+
+button,
+a,
+textarea,
+input,
+select {
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+button:active,
+a:active {
+  transform: translateY(1px);
 }
 
 /* Always-visible, high-contrast focus for keyboard users. */

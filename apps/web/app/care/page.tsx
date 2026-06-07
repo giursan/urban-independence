@@ -1,6 +1,6 @@
+import { redirect } from "next/navigation";
 import { AppNav } from "@/components/AppNav";
 import { CaregiverWorkspace } from "@/components/CaregiverWorkspace";
-import { DEV_USER_ID } from "@/lib/dev";
 import { createClient } from "@/lib/supabase/server";
 import type { CompanionFact } from "@/lib/types";
 
@@ -11,16 +11,21 @@ function asText(value: unknown): string {
 export default async function CarePage() {
   const supabase = await createClient();
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
   const { data: profile } = await supabase
     .from("profiles")
     .select("preferred_name, interests, life_context")
-    .eq("id", DEV_USER_ID)
+    .eq("id", user.id)
     .maybeSingle();
 
   const { data: facts } = await supabase
     .from("companion_facts")
     .select("id, category, title, content, tags, importance, updated_at")
-    .eq("user_id", DEV_USER_ID)
+    .eq("user_id", user.id)
     .order("updated_at", { ascending: false });
 
   const lifeContext = (profile?.life_context as Record<string, unknown> | null) ?? {};

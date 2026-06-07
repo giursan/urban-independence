@@ -31,7 +31,7 @@ export default async function ReportPage({
     <div className="flex flex-1 flex-col">
       <AppNav />
       <ReportView snapshot={snapshot} dateLabel={dateLabel} />
-      <div className="mx-auto w-full max-w-3xl space-y-6 px-4 pb-12">
+      <div className="mx-auto w-full max-w-6xl space-y-6 px-4 pb-12 sm:px-6">
         <div className="flex flex-wrap gap-3">
           <DownloadPdfButton snapshot={snapshot} dateLabel={dateLabel} />
         </div>

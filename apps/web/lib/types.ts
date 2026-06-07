@@ -5,6 +5,9 @@ export interface Snapshot {
   engagement_level: number;
   loneliness_signal: number;
   conversational_markers: string;
+  cognitive_concern_level?: number;
+  cognitive_observations?: string;
+  cognitive_flags?: string[];
   topics_of_interest: string[];
   highlights: string[];
   gentle_followups: string[];

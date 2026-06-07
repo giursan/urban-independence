@@ -14,4 +14,6 @@ async def test_diagnostics_returns_valid_snapshot():
     assert -1.0 <= snapshot.emotional_valence <= 1.0
     assert 1 <= snapshot.engagement_level <= 5
     assert 1 <= snapshot.loneliness_signal <= 5
+    assert 1 <= snapshot.cognitive_concern_level <= 5
+    assert isinstance(snapshot.cognitive_flags, list)
     assert snapshot.disclaimer  # non-empty non-clinical disclaimer

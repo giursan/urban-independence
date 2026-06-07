@@ -1,18 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 const MIN = 0.85;
 const MAX = 1.6;
 const STEP = 0.15;
 
 export function FontSizeControl() {
-  const [scale, setScale] = useState(1);
-
-  useEffect(() => {
-    const saved = Number(localStorage.getItem("font-scale"));
-    if (saved) setScale(saved);
-  }, []);
+  const [scale, setScale] = useState(() => {
+    if (typeof window === "undefined") return 1;
+    return Number(localStorage.getItem("font-scale")) || 1;
+  });
 
   function apply(next: number) {
     const clamped = Math.min(MAX, Math.max(MIN, Number(next.toFixed(2))));
@@ -22,11 +20,15 @@ export function FontSizeControl() {
   }
 
   return (
-    <div className="flex items-center gap-1" role="group" aria-label="Text size">
+    <div
+      className="flex items-center gap-1 rounded-2xl border border-border bg-background p-1"
+      role="group"
+      aria-label="Text size"
+    >
       <button
         type="button"
         onClick={() => apply(scale - STEP)}
-        className="rounded-lg border border-border bg-card px-3 py-2 text-base font-semibold hover:bg-background"
+        className="min-h-11 min-w-11 rounded-xl bg-card px-3 py-2 text-base font-bold shadow-sm hover:bg-white"
         aria-label="Make text smaller"
       >
         A−
@@ -34,7 +36,7 @@ export function FontSizeControl() {
       <button
         type="button"
         onClick={() => apply(1)}
-        className="rounded-lg border border-border bg-card px-3 py-2 text-lg font-semibold hover:bg-background"
+        className="min-h-11 min-w-11 rounded-xl bg-card px-3 py-2 text-lg font-bold shadow-sm hover:bg-white"
         aria-label="Reset text size"
       >
         A
@@ -42,7 +44,7 @@ export function FontSizeControl() {
       <button
         type="button"
         onClick={() => apply(scale + STEP)}
-        className="rounded-lg border border-border bg-card px-3 py-2 text-xl font-semibold hover:bg-background"
+        className="min-h-11 min-w-11 rounded-xl bg-card px-3 py-2 text-xl font-bold shadow-sm hover:bg-white"
         aria-label="Make text larger"
       >
         A+

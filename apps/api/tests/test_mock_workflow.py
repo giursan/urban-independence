@@ -4,11 +4,21 @@ from dataclasses import dataclass
 from itertools import count
 from typing import Any
 
+import pytest
 from fastapi.testclient import TestClient
 
+from app.auth import AuthedUser, current_user
 from app.config import settings
 from app.main import app
 from app.routes import conversations, telegram, voice
+
+
+@pytest.fixture
+def as_dev_user():
+    """Bypass JWT verification for endpoints behind current_user."""
+    app.dependency_overrides[current_user] = lambda: AuthedUser(id=settings.dev_user_id)
+    yield
+    app.dependency_overrides.pop(current_user, None)
 from app.routes.telegram import _conversation_id as telegram_conversation_id
 from app.routes.voice import _conversation_id as voice_conversation_id
 
@@ -30,6 +40,9 @@ class InMemoryDB:
             "conversations": [],
             "messages": [],
             "safety_events": [],
+            "caller_phone_numbers": [
+                {"phone": "15555550100", "user_id": settings.dev_user_id, "verified": True}
+            ],
         }
         self._ids = count(1)
 
@@ -148,7 +161,7 @@ class FakeAgent:
         return type("RunResult", (), {"output": text})()
 
 
-def test_mock_transport_workflow(monkeypatch):
+def test_mock_transport_workflow(monkeypatch, as_dev_user):
     db = InMemoryDB()
     sent_telegram: list[tuple[str | int, str]] = []
 
@@ -169,9 +182,18 @@ def test_mock_transport_workflow(monkeypatch):
 
     client = TestClient(app)
 
+    # Call from the user's registered number → identified, greeted, no challenge.
+    setup = client.post(
+        "/voice",
+        content="CallSid=CA-MOCK&From=%2B15555550100",
+        headers={"content-type": "application/x-www-form-urlencoded"},
+    )
+    assert setup.status_code == 200
+    assert "Phone reply" in setup.text
+
     phone = client.post(
         "/voice/turn",
-        content="CallSid=CA-MOCK&SpeechResult=I%20miss%20Mia",
+        content="CallSid=CA-MOCK&From=%2B15555550100&SpeechResult=I%20miss%20Mia",
         headers={"content-type": "application/x-www-form-urlencoded"},
     )
     assert phone.status_code == 200
@@ -200,8 +222,9 @@ def test_mock_transport_workflow(monkeypatch):
     assert any("Telegram reply" in (session["last_message"] or "") for session in sessions)
 
     phone_messages = client.get(f"/conversations/{voice_conversation_id('CA-MOCK')}/messages")
-    assert [m["role"] for m in phone_messages.json()] == ["user", "assistant"]
-    assert phone_messages.json()[0]["content"] == "I miss Mia"
+    # Greeting (from /voice) + the user turn and its reply.
+    assert [m["role"] for m in phone_messages.json()] == ["assistant", "user", "assistant"]
+    assert "I miss Mia" in [m["content"] for m in phone_messages.json()]
 
     telegram_id = telegram_conversation_id("999")
     deleted = client.delete(f"/conversations/{telegram_id}")

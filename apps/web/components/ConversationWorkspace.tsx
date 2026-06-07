@@ -1,7 +1,7 @@
 "use client";
 
 import { type UIMessage } from "@ai-sdk/react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { Chat } from "./Chat";
 
@@ -63,7 +63,7 @@ export function ConversationWorkspace({ greeting }: { greeting: string }) {
     [activeId, conversations],
   );
 
-  async function loadConversations(preferredId?: string) {
+  const loadConversations = useCallback(async (preferredId?: string) => {
     setLoadingConversations(true);
     setError("");
     try {
@@ -78,9 +78,9 @@ export function ConversationWorkspace({ greeting }: { greeting: string }) {
     } finally {
       setLoadingConversations(false);
     }
-  }
+  }, []);
 
-  async function loadMessages(conversationId: string) {
+  const loadMessages = useCallback(async (conversationId: string) => {
     if (!conversations.some((conversation) => conversation.id === conversationId)) {
       setMessages([]);
       return;
@@ -97,15 +97,21 @@ export function ConversationWorkspace({ greeting }: { greeting: string }) {
     } finally {
       setLoadingMessages(false);
     }
-  }
+  }, [conversations]);
 
   useEffect(() => {
-    loadConversations();
-  }, []);
+    const timer = window.setTimeout(() => {
+      void loadConversations();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [loadConversations]);
 
   useEffect(() => {
-    loadMessages(activeId);
-  }, [activeId, conversations]);
+    const timer = window.setTimeout(() => {
+      void loadMessages(activeId);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [activeId, loadMessages]);
 
   function startNewConversation() {
     setActiveId(newConversationId());
@@ -138,26 +144,37 @@ export function ConversationWorkspace({ greeting }: { greeting: string }) {
   }
 
   return (
-    <main className="mx-auto grid w-full max-w-6xl flex-1 gap-4 px-4 py-5 lg:grid-cols-[19rem_minmax(0,1fr)]">
-      <aside className="rounded-2xl border border-border bg-card p-4 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto">
+    <main className="mx-auto grid h-[calc(100vh-5rem)] w-full max-w-6xl flex-1 gap-4 px-4 py-5 sm:px-6 lg:grid-cols-[18rem_minmax(0,1fr)]">
+      <aside className="rounded-2xl bg-card p-4 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
         <div className="flex items-center justify-between gap-3">
-          <h1 className="text-2xl font-bold tracking-tight">Sessions</h1>
+          <div>
+            <p className="text-sm font-semibold text-muted">Conversations</p>
+            <h1 className="text-2xl font-semibold tracking-tight">Sessions</h1>
+          </div>
           <button
             type="button"
             onClick={startNewConversation}
-            className="rounded-lg bg-primary px-4 py-2 text-base font-semibold text-primary-foreground"
+            className="min-h-11 rounded-xl bg-foreground px-4 py-2 text-base font-semibold text-white hover:bg-black"
           >
             New
           </button>
         </div>
 
-        {error ? <p className="mt-3 text-base text-danger">{error}</p> : null}
+        {error ? (
+          <p className="mt-4 rounded-xl border border-danger bg-white px-4 py-3 text-base font-semibold text-danger">
+            {error}
+          </p>
+        ) : null}
 
-        <div className="mt-4 space-y-2">
+        <div className="mt-5 space-y-3">
           {loadingConversations ? (
-            <p className="text-base text-muted">Loading sessions...</p>
+            <p className="rounded-xl bg-background px-4 py-5 text-lg text-muted">
+              Loading sessions...
+            </p>
           ) : conversations.length === 0 ? (
-            <p className="text-base leading-relaxed text-muted">No saved sessions yet.</p>
+            <p className="rounded-xl bg-background px-4 py-5 text-lg leading-relaxed text-muted">
+              No saved sessions yet.
+            </p>
           ) : (
             conversations.map((conversation) => {
               const active = conversation.id === activeId;
@@ -165,19 +182,21 @@ export function ConversationWorkspace({ greeting }: { greeting: string }) {
                 <div
                   key={conversation.id}
                   className={
-                    "rounded-xl border p-3 " +
-                    (active ? "border-primary bg-background" : "border-border bg-card")
+                    "rounded-xl p-1 " +
+                    (active
+                      ? "bg-background"
+                      : "bg-card hover:bg-background")
                   }
                 >
                   <button
                     type="button"
                     onClick={() => setActiveId(conversation.id)}
-                    className="block w-full text-left"
+                    className="block min-h-18 w-full rounded-lg px-3 py-3 text-left"
                   >
                     <span className="block text-base font-semibold">
                       {dateLabel(conversation.last_message_at ?? conversation.started_at)}
                     </span>
-                    <span className="mt-1 block overflow-hidden text-ellipsis whitespace-nowrap text-base text-muted">
+                    <span className="mt-1 block overflow-hidden text-ellipsis whitespace-nowrap text-base leading-relaxed text-muted">
                       {conversation.last_role === "user" ? "You: " : ""}
                       {sessionLabel(conversation)}
                     </span>
@@ -185,7 +204,7 @@ export function ConversationWorkspace({ greeting }: { greeting: string }) {
                   <button
                     type="button"
                     onClick={() => deleteConversation(conversation.id)}
-                    className="mt-2 rounded-lg border border-border px-3 py-1 text-sm font-semibold text-muted hover:bg-background"
+                    className="ml-3 mb-2 rounded-lg px-3 py-2 text-sm font-semibold text-muted hover:bg-card"
                   >
                     Delete
                   </button>
@@ -196,18 +215,23 @@ export function ConversationWorkspace({ greeting }: { greeting: string }) {
         </div>
       </aside>
 
-      <section className="flex min-h-[70vh] min-w-0 flex-col rounded-2xl border border-border bg-card">
-        <div className="border-b border-border px-4 py-3">
-          <p className="text-lg font-semibold">
-            {activeConversation ? dateLabel(activeConversation.last_message_at) : "New conversation"}
-          </p>
+      <section className="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl bg-card">
+        <div className="flex flex-col gap-3 border-b border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-muted">Now talking</p>
+            <p className="text-xl font-semibold">
+              {activeConversation ? dateLabel(activeConversation.last_message_at) : "New conversation"}
+            </p>
+          </div>
           <p className="text-base text-muted">
             {activeConversation?.mode === "phone" ? "Started by phone call" : "Adaptive companion chat"}
           </p>
         </div>
 
         {loadingMessages ? (
-          <p className="m-auto text-lg text-muted">Loading this session...</p>
+          <div className="m-auto rounded-2xl bg-background px-6 py-5 text-xl text-muted">
+            Loading this session...
+          </div>
         ) : (
           <Chat
             key={activeId}

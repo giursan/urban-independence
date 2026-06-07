@@ -114,7 +114,7 @@ create table public.report_shares (
   id              uuid primary key default gen_random_uuid(),
   report_id       uuid        not null references public.reports (id) on delete cascade,
   user_id         uuid        not null references auth.users (id) on delete cascade,
-  token           text        not null unique default encode(gen_random_bytes(24), 'hex'),
+  token           text        not null unique default encode(extensions.gen_random_bytes(24), 'hex'),
   recipient_label text,
   expires_at      timestamptz not null,
   revoked         boolean     not null default false,
