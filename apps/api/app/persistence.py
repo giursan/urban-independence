@@ -74,6 +74,20 @@ def persist_user_message(db: Any, conversation_id: str, user_id: str, text: str)
     ).execute()
 
 
+def persist_assistant_message(db: Any, conversation_id: str, user_id: str, text: str) -> None:
+    """Persist an assistant turn produced outside the Vercel AI streaming adapter."""
+    if not text or not text.strip():
+        return
+    db.table("messages").insert(
+        {
+            "conversation_id": conversation_id,
+            "user_id": user_id,
+            "role": "assistant",
+            "content": text,
+        }
+    ).execute()
+
+
 def persist_new_messages(db: Any, conversation_id: str, user_id: str, messages: list[Any]) -> None:
     rows = _rows_from_messages(messages)
     if not rows:
@@ -89,6 +103,38 @@ def persist_new_messages(db: Any, conversation_id: str, user_id: str, messages: 
             for role, content in rows
         ]
     ).execute()
+
+
+def fetch_model_history(db: Any, conversation_id: str, limit: int = 30) -> list[Any]:
+    """Load a persisted transcript as Pydantic AI model history.
+
+    Used by phone calls, where each Twilio webhook is a separate HTTP request
+    but should still feel like one continuous conversation.
+    """
+    rows = (
+        db.table("messages")
+        .select("role,content,created_at")
+        .eq("conversation_id", conversation_id)
+        .order("created_at", desc=True)
+        .limit(limit)
+        .execute()
+        .data
+        or []
+    )
+    chronological = list(reversed(rows))
+    while chronological and chronological[0].get("role") != "user":
+        chronological.pop(0)
+
+    history: list[Any] = []
+    for row in chronological:
+        content = (row.get("content") or "").strip()
+        if not content:
+            continue
+        if row.get("role") == "user":
+            history.append(ModelRequest(parts=[UserPromptPart(content=content)]))
+        elif row.get("role") == "assistant":
+            history.append(ModelResponse(parts=[TextPart(content=content)]))
+    return history
 
 
 def log_safety_event(

@@ -16,26 +16,29 @@ Monorepo with two deployables sharing one Supabase project:
 
 ```
 apps/web   Next.js 16 PWA (App Router, Tailwind v4, AI SDK v6 useChat) — accessible, elderly-first UI
-apps/api   FastAPI + Pydantic AI (v1.106) — the "companion brain": persona, modes,
+apps/api   FastAPI + Pydantic AI (v1.106) — the "companion brain": persona,
            memory tools, safety screen, and wellbeing diagnostics
 supabase   Postgres + pgvector schema, RLS, and RPCs (migrations/0001_init.sql)
 ```
 
 - **Chat** flows from the PWA's `useChat` → FastAPI `/chat`, where Pydantic AI's
   `VercelAIAdapter` streams the agent over the AI SDK protocol (SSE, `sdk_version=6`).
+- **Phone** flows from Twilio Voice webhooks → FastAPI `/voice`; each `CallSid` maps
+  to a persisted conversation, so phone transcripts feed the same memory, safety, and
+  wellbeing-summary pipeline as web chat.
 - **Memory/continuity**: OpenAI embeddings + pgvector (`match_memories` RPC); the agent has
   `save_memory` / `recall_memory` / `log_mood` tools, and relevant memories are injected as
   dynamic instructions each turn.
-- **Modes**: `companion` (warm chat), `reflect` (Socratic), `reminiscence`, `engage` (cognitive play).
+- **Adaptive posture**: one companion prompt chooses warm chat, Socratic reflection,
+  reminiscence, or light cognitive play turn by turn.
 - **Safety**: a deterministic crisis screen on each message → resources in the UI + a logged `safety_event`.
 - **Diagnostics**: a structured-output agent (`WellbeingSnapshot`) over recent transcripts →
   stored, rendered, exportable to PDF, and shareable via a `SECURITY DEFINER` token RPC.
 - **Privacy**: Row Level Security on every table; the API uses the caller's JWT (RLS applies);
   the service-role key is used only for the public share-resolution endpoint.
 
-**Voice (chat-first decision):** voice calls are intentionally deferred. The design target is
-the OpenAI Realtime API (browser WebRTC + a backend ephemeral-token endpoint) reusing the same
-persona/tools — no persistent-WebSocket host needed.
+**Voice decision:** the hackathon phone path uses Twilio `<Gather>` for simple
+turn-based speech calls. Realtime streaming remains the upgrade path.
 
 ## Prerequisites
 
@@ -72,6 +75,10 @@ Key env (see `.env.example`): `OPENAI_API_KEY`, `OPENAI_MODEL` (default `gpt-4o`
 `OPENAI_EMBEDDING_MODEL` (default `text-embedding-3-small`), `SUPABASE_URL`,
 `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_JWT_SECRET`, `ALLOWED_ORIGINS`.
 
+For phone demos, expose the API with a public URL such as ngrok and set the Twilio
+Voice webhook for the number to `POST https://<your-public-api>/voice`. The app
+does not need the Twilio SDK for inbound `<Gather>` calls.
+
 ## 3) Frontend (apps/web)
 
 ```bash
@@ -86,8 +93,8 @@ summary from **Summaries**, then download the PDF or create a share link.
 ## Testing & verification
 
 ```bash
-# Backend: agent tools, modes, safety, diagnostics (uses Pydantic AI TestModel — no API key needed)
-uv run --directory apps/api pytest -q          # 8 passing
+# Backend: agent tools, voice TwiML, safety, diagnostics (uses Pydantic AI TestModel — no API key needed)
+uv run --directory apps/api pytest -q
 
 # Frontend: type-check + production build
 cd apps/web && pnpm build
@@ -109,7 +116,7 @@ download PDF → create a share link → open it in a private window → revoke 
 
 ## What's implemented vs. deferred
 
-- ✅ Accessible chat PWA, auth + onboarding, 4 engagement modes, long-term memory, crisis safety,
-  wellbeing diagnostics, PDF export, consented expiring share links, full RLS.
-- ⏭️ Deferred (designed-for): voice (OpenAI Realtime), caregiver accounts/dashboard, scheduled
+- ✅ Accessible chat PWA, auth + onboarding, adaptive companion behavior, Twilio phone calls,
+  long-term memory, crisis safety, wellbeing diagnostics, PDF export, consented expiring share links, full RLS.
+- ⏭️ Deferred (designed-for): OpenAI Realtime voice, caregiver accounts/dashboard, scheduled
   cron diagnostics, i18n, validated check-in scales.
