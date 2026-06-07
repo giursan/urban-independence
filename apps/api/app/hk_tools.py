@@ -120,11 +120,11 @@ async def web_scrape(url: str) -> dict:
 
 
 @companion_agent.tool_plain
-async def get_calendar_events(max_results: int = 10) -> dict:
+async def get_calendar_events(calendar_id: str | None = None, max_results: int = 10) -> dict:
     """Upcoming events from the configured Google Calendar.
 
     Use when the person asks about their schedule, what's coming up, or
-    references an event they think is on the calendar. Uses the default
-    GOOGLE_CALENDAR_ID set in the API environment.
+    references an event they think is on the calendar. Uses `calendar_id` when
+    provided, otherwise the default GOOGLE_CALENDAR_ID set in the API environment.
     """
-    return await calendar.fetch_calendar_events(max_results=max_results)
+    return await calendar.fetch_calendar_events(calendar_id=calendar_id, max_results=max_results)
