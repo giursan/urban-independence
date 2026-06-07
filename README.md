@@ -114,7 +114,13 @@ sign in → onboard → chat → confirm memory recall in a **new** session → 
 type a (test) crisis phrase → see the resources banner → create a wellbeing summary →
 download PDF → create a share link → open it in a private window → revoke → confirm it 404s.
 
-## Deployment (Vercel)
+## Deployment
+
+For a Docker/ngrok deployment on a UGREEN NAS, use `deploy/compose.yml`; the
+full runbook is in [`deploy/README.md`](deploy/README.md). It runs FastAPI,
+Next.js, a Caddy gateway, and ngrok behind one public URL.
+
+### Vercel
 
 - **Web**: deploy `apps/web` as a Next.js project. Set `NEXT_PUBLIC_*` envs. Installable PWA
   (manifest + service worker) included.
