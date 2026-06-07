@@ -16,11 +16,51 @@ Env vars (optional per-tool):
 
 from __future__ import annotations
 
+import functools
+import logging
+from collections.abc import Awaitable, Callable
+from typing import Any
+
 from .companion import companion_agent
 from .sources import aqhi, calendar, mtr, news, traffic, web, weather
 
+logger = logging.getLogger(__name__)
+
+
+def _live_tool(fn: Callable[..., Awaitable[dict]]) -> Callable[..., Awaitable[dict]]:
+    """Keep a live-data tool from ever crashing the agent turn.
+
+    These tools call flaky external feeds and take model-chosen arguments, so
+    they can raise: timeouts, HTTP errors, parse errors, or a bad/placeholder
+    argument (e.g. line='Any'). An unhandled exception kills the whole agent
+    run and surfaces to the caller as an "application error". Instead we log it
+    and hand the model a structured error it can recover from — usually by
+    telling the person briefly or asking for the missing detail and retrying.
+
+    `functools.wraps` preserves the signature and docstring so pydantic-ai still
+    generates the correct tool schema.
+    """
+
+    @functools.wraps(fn)
+    async def wrapper(*args: Any, **kwargs: Any) -> dict:
+        try:
+            return await fn(*args, **kwargs)
+        except Exception as exc:  # noqa: BLE001 — tools must never crash the turn
+            logger.warning("live tool %s failed: %s", fn.__name__, exc)
+            return {
+                "error": f"The {fn.__name__} tool could not complete: {exc}",
+                "hint": (
+                    "Tell the person briefly that this information isn't available "
+                    "right now. If a value looks wrong or missing (e.g. which MTR "
+                    "line or station), ask them for it and try again."
+                ),
+            }
+
+    return wrapper
+
 
 @companion_agent.tool_plain
+@_live_tool
 async def get_weather(district: str = "Hong Kong Observatory") -> dict:
     """Current Hong Kong weather: temperature, humidity, rainfall, UV, condition.
 
@@ -33,6 +73,7 @@ async def get_weather(district: str = "Hong Kong Observatory") -> dict:
 
 
 @companion_agent.tool_plain
+@_live_tool
 async def get_weather_forecast(days: int = 5) -> dict:
     """Hong Kong weather forecast for the next 1–9 days.
 
@@ -44,6 +85,7 @@ async def get_weather_forecast(days: int = 5) -> dict:
 
 
 @companion_agent.tool_plain
+@_live_tool
 async def get_air_quality(district: str) -> dict:
     """Live air-quality (AQHI) for a Hong Kong district.
 
@@ -57,6 +99,7 @@ async def get_air_quality(district: str) -> dict:
 
 
 @companion_agent.tool_plain
+@_live_tool
 async def get_traffic_advisory(district: str | None = None) -> dict:
     """Real-time HK Transport Department incident feed: closures, accidents,
     construction, watermain works, special arrangements.
@@ -68,6 +111,7 @@ async def get_traffic_advisory(district: str | None = None) -> dict:
 
 
 @companion_agent.tool_plain
+@_live_tool
 async def get_mtr_status(line: str, station: str) -> dict:
     """Next MTR train arrivals and delay status at a given station on a given line.
 
@@ -79,6 +123,7 @@ async def get_mtr_status(line: str, station: str) -> dict:
 
 
 @companion_agent.tool_plain
+@_live_tool
 async def get_mtr_bus_schedule(route: str, station_id: str) -> dict:
     """MTR Bus stop ETAs for a given route and stop ID.
 
@@ -89,6 +134,7 @@ async def get_mtr_bus_schedule(route: str, station_id: str) -> dict:
 
 
 @companion_agent.tool_plain
+@_live_tool
 async def get_hkfp_news(limit: int = 5) -> dict:
     """Latest Hong Kong news headlines from Hong Kong Free Press.
 
@@ -99,6 +145,7 @@ async def get_hkfp_news(limit: int = 5) -> dict:
 
 
 @companion_agent.tool_plain
+@_live_tool
 async def web_search(query: str, limit: int = 5) -> dict:
     """General web search (Firecrawl).
 
@@ -110,6 +157,7 @@ async def web_search(query: str, limit: int = 5) -> dict:
 
 
 @companion_agent.tool_plain
+@_live_tool
 async def web_scrape(url: str) -> dict:
     """Fetch and parse a specific web page as markdown (Firecrawl).
 
@@ -120,6 +168,7 @@ async def web_scrape(url: str) -> dict:
 
 
 @companion_agent.tool_plain
+@_live_tool
 async def get_calendar_events(calendar_id: str | None = None, max_results: int = 10) -> dict:
     """Upcoming events from the configured Google Calendar.
 
