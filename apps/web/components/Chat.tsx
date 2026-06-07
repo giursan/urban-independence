@@ -4,7 +4,6 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { API_BASE } from "@/lib/api";
-import { createClient } from "@/lib/supabase/client";
 import { type Mode, MODES } from "@/lib/modes";
 import { ModeSwitcher } from "./ModeSwitcher";
 import { CrisisBanner } from "./CrisisBanner";
@@ -18,7 +17,6 @@ export function Chat({ greeting }: { greeting: string }) {
   );
   const [mode, setMode] = useState<Mode>("companion");
   const modeRef = useRef<Mode>(mode);
-  const tokenRef = useRef<string | null>(null);
   const [crisis, setCrisis] = useState(false);
   const [input, setInput] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
@@ -27,24 +25,10 @@ export function Chat({ greeting }: { greeting: string }) {
     modeRef.current = mode;
   }, [mode]);
 
-  useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getSession().then(({ data }) => {
-      tokenRef.current = data.session?.access_token ?? null;
-    });
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      tokenRef.current = session?.access_token ?? null;
-    });
-    return () => sub.subscription.unsubscribe();
-  }, []);
-
   const transport = useMemo(
     () =>
       new DefaultChatTransport({
         api: `${API_BASE}/chat`,
-        headers: () => ({
-          Authorization: tokenRef.current ? `Bearer ${tokenRef.current}` : "",
-        }),
         body: () => ({ conversation_id: conversationId, mode: modeRef.current }),
       }),
     [conversationId],

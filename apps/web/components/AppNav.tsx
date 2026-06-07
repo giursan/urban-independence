@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { usePathname } from "next/navigation";
 import { FontSizeControl } from "./FontSizeControl";
 
 const LINKS = [
@@ -12,14 +11,6 @@ const LINKS = [
 
 export function AppNav({ userName }: { userName?: string | null }) {
   const pathname = usePathname();
-  const router = useRouter();
-
-  async function signOut() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/sign-in");
-    router.refresh();
-  }
 
   return (
     <header className="sticky top-0 z-10 border-b border-border bg-card/90 backdrop-blur">
@@ -50,13 +41,6 @@ export function AppNav({ userName }: { userName?: string | null }) {
           {userName ? (
             <span className="hidden text-base text-muted sm:inline">Hi, {userName}</span>
           ) : null}
-          <button
-            type="button"
-            onClick={signOut}
-            className="rounded-lg border border-border bg-card px-4 py-2 text-base font-semibold hover:bg-background"
-          >
-            Sign out
-          </button>
         </div>
       </nav>
     </header>

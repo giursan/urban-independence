@@ -13,8 +13,12 @@ from .config import settings
 
 
 def user_client(access_token: str) -> Client:
+    # Auth is disabled for testing: with no token, use the service-role client
+    # (RLS is off anyway). When real auth returns, a token routes PostgREST
+    # through the user's JWT so RLS applies as them.
+    if not access_token:
+        return service_client()
     client = create_client(settings.supabase_url, settings.supabase_anon_key)
-    # Route PostgREST requests through the user's JWT so RLS applies as them.
     client.postgrest.auth(access_token)
     return client
 

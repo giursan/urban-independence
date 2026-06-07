@@ -1,21 +1,17 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { DEV_USER_ID } from "@/lib/dev";
 import { AppNav } from "@/components/AppNav";
 import { GenerateReportButton } from "@/components/GenerateReportButton";
 import type { Snapshot } from "@/lib/types";
 
 export default async function MePage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/sign-in");
 
   const { data: profile } = await supabase
     .from("profiles")
     .select("preferred_name")
-    .eq("id", user.id)
+    .eq("id", DEV_USER_ID)
     .maybeSingle();
 
   const { data: snapshots } = await supabase
